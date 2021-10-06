@@ -26,11 +26,11 @@ func main() {
 
 	// Guardando imagen
 	// outputImageName := "guardo.png"
-	// outputImageName := "guardo.jpg"
+	outputImageName := "guardo.jpg"
 	// err = saveImage(outputImageName, img)
 	// check(err)
 	//zoom(500, 200, img, "pepe.jpg")
-	// scaleGray(img, width, height, salida)
+	scaleGray(img, width, height, outputImageName)
 }
 
 func loadImage(fileName string) (image.Image, error) {
