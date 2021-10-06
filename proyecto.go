@@ -30,9 +30,7 @@ func main() {
 	// err = saveImage(outputImageName, img)
 	// check(err)
 	//zoom(500, 200, img, "pepe.jpg")
-	salida := "pep.jpg"
-	scaleGray(img, width, height, salida)
-
+	// scaleGray(img, width, height, salida)
 }
 
 func loadImage(fileName string) (image.Image, error) {
@@ -90,7 +88,6 @@ func scaleGray(img image.Image, width, height int, fileName string) {
 	}
 	// fmt.Println(colors)
 	// fmt.Println(len(colors))
-
 	err := saveImage(fileName, img2)
 	check(err)
 }
