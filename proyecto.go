@@ -9,7 +9,10 @@ import (
 	"image/png"
 	"os"
 
-	"github.com/nfnt/resize"
+	"gonum.org/v1/plot"
+	"gonum.org/v1/plot/plotter"
+	"gonum.org/v1/plot/plotutil"
+	"gonum.org/v1/plot/vg"
 )
 
 func main() {
@@ -31,6 +34,8 @@ func main() {
 	// check(err)
 	//zoom(500, 200, img, "pepe.jpg")
 	scaleGray(img, width, height, outputImageName)
+	// tableGray := lutGray()
+	// fmt.Println(tableGray)
 }
 
 func loadImage(fileName string) (image.Image, error) {
@@ -46,6 +51,26 @@ func loadImage(fileName string) (image.Image, error) {
 	check(err)
 
 	return img, err
+}
+
+func plote(histogram map[int]int) {
+	p := plot.New()
+
+	p.Title.Text = "Plotutil example"
+	p.X.Label.Text = "X"
+	p.Y.Label.Text = "Y"
+	pts := make(plotter.XYs, n)
+	for i := 0; i < len(histogram); i++ {
+		pts[i].X = i
+		pts[i].Y = histogram[i]
+	}
+	err := plotutil.AddLinePoints(p, "First", pts)
+	check(err)
+
+	// Save the plot to a PNG file.
+	if err := p.Save(4*vg.Inch, 4*vg.Inch, "points.png"); err != nil {
+		panic(err)
+	}
 }
 
 func saveImage(fileName string, img image.Image) error {
@@ -64,14 +89,14 @@ func saveImage(fileName string, img image.Image) error {
 	return err
 }
 
-func zoom(width, height int, img image.Image, fileName string) {
+/*func zoom(width, height int, img image.Image, fileName string) {
 	// Llame a la biblioteca de cambio de tamaño para ampliar la img
 	newsize := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
 	err := saveImage(fileName, newsize)
 	check(err)
-}
+}*/
 
-func scaleGray(img image.Image, width, height int, fileName string) {
+func scaleGray(img image.Image, width, height int, fileName string) image.Image {
 	var colors []uint32
 
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
@@ -86,10 +111,44 @@ func scaleGray(img image.Image, width, height int, fileName string) {
 			colors = append(colors, uint32(y))
 		}
 	}
-	// fmt.Println(colors)
-	// fmt.Println(len(colors))
-	err := saveImage(fileName, img2)
-	check(err)
+	plote(histogram(colors))
+	/*err := saveImage(fileName, img2)
+	check(err)*/
+	return img2
+}
+
+func negative(img *image.Gray, lutGray map[int]int, width, height int) *image.Gray {
+	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			newColor := color.Gray{uint8(float32(lutGray[int(img.GrayAt(i, j).Y)]))}
+			img2.Set(i, j, newColor)
+		}
+	}
+	return img2
+}
+
+func lutGray() map[int]int {
+	table := make(map[int]int)
+	for i := 0; i <= 255; i++ {
+		table[i] = 255 - i
+	}
+	return table
+}
+
+func histogram(colors []uint32) map[int]int {
+	histogram := make(map[int]int)
+	for i := 0; i <= 255; i++ {
+		cont := 0
+		for j := 0; j < len(colors); j++ {
+			if i == int(colors[j]) {
+				cont++
+			}
+		}
+		histogram[i] = cont
+	}
+	// fmt.Println(histogram)
+	return histogram
 }
 
 func checkImgFormat(extension string, fimg *os.File, img image.Image) error {
