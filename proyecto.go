@@ -27,15 +27,24 @@ func main() {
 	fmt.Printf("Width: %d\n", width)
 	fmt.Printf("Height: %d\n", height)
 
-	// Guardando imagen
 	// outputImageName := "guardo.png"
-	outputImageName := "guardo.jpg"
-	// err = saveImage(outputImageName, img)
-	// check(err)
-	//zoom(500, 200, img, "pepe.jpg")
-	scaleGray(img, width, height, outputImageName)
-	// tableGray := lutGray()
+	// outputImageName := "guardo.jpg"
+	/*outputImageNameNegative := "guardo-negativo.jpg"
+	img2, _ := scaleGray(img, width, height, outputImageName) // colorsGray
+	err = saveImage(outputImageName, img2)
+	check(err)
+	tableGray := lutGray()
+	img3 := negative(img2, tableGray, width, height)
+	err = saveImage(outputImageNameNegative, img3)
+	check(err)*/
 	// fmt.Println(tableGray)
+	_, colorsGray := scaleGray(img, width, height) // colorsGray
+	histogram := histogram(colorsGray)
+	// fmt.Println(histogram)
+	min, max := valueRange(histogram)
+	fmt.Printf("Rango de valores: [%d,%d]\n", min, max)
+	plote(histogram)
+
 }
 
 func loadImage(fileName string) (image.Image, error) {
@@ -51,26 +60,6 @@ func loadImage(fileName string) (image.Image, error) {
 	check(err)
 
 	return img, err
-}
-
-func plote(histogram map[int]int) {
-	p := plot.New()
-
-	p.Title.Text = "Plotutil example"
-	p.X.Label.Text = "X"
-	p.Y.Label.Text = "Y"
-	pts := make(plotter.XYs, n)
-	for i := 0; i < len(histogram); i++ {
-		pts[i].X = i
-		pts[i].Y = histogram[i]
-	}
-	err := plotutil.AddLinePoints(p, "First", pts)
-	check(err)
-
-	// Save the plot to a PNG file.
-	if err := p.Save(4*vg.Inch, 4*vg.Inch, "points.png"); err != nil {
-		panic(err)
-	}
 }
 
 func saveImage(fileName string, img image.Image) error {
@@ -89,14 +78,7 @@ func saveImage(fileName string, img image.Image) error {
 	return err
 }
 
-/*func zoom(width, height int, img image.Image, fileName string) {
-	// Llame a la biblioteca de cambio de tamaño para ampliar la img
-	newsize := resize.Resize(uint(width), uint(height), img, resize.Lanczos3)
-	err := saveImage(fileName, newsize)
-	check(err)
-}*/
-
-func scaleGray(img image.Image, width, height int, fileName string) image.Image {
+func scaleGray(img image.Image, width, height int) (*image.Gray, []uint32) {
 	var colors []uint32
 
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
@@ -111,10 +93,7 @@ func scaleGray(img image.Image, width, height int, fileName string) image.Image 
 			colors = append(colors, uint32(y))
 		}
 	}
-	plote(histogram(colors))
-	/*err := saveImage(fileName, img2)
-	check(err)*/
-	return img2
+	return img2, colors
 }
 
 func negative(img *image.Gray, lutGray map[int]int, width, height int) *image.Gray {
@@ -149,6 +128,42 @@ func histogram(colors []uint32) map[int]int {
 	}
 	// fmt.Println(histogram)
 	return histogram
+}
+
+func valueRange(histogram map[int]int) (int, int) {
+	// 0 Negro
+	// 255 Blanco
+	min := 300 // Negro
+	max := 0   // Blanco
+	for i := 0; i < len(histogram); i++ {
+		if i >= max && histogram[i] != 0 {
+			max = i
+		}
+		if i <= min && histogram[i] != 0 {
+			min = i
+		}
+	}
+	return min, max
+}
+
+func plote(histogram map[int]int) {
+
+	p := plot.New()
+
+	p.Title.Text = "Plotutil example"
+	p.X.Label.Text = "X"
+	p.Y.Label.Text = "Y"
+	pts := make(plotter.XYs, len(histogram))
+	for i := 0; i < len(histogram); i++ {
+		pts[i].X = float64(i)
+		pts[i].Y = float64(histogram[i])
+	}
+	err := plotutil.AddLinePoints(p, "First", pts)
+	check(err)
+
+	// Save the plot to a PNG file.
+	err = p.Save(4*vg.Inch, 4*vg.Inch, "points.png")
+	check(err)
 }
 
 func checkImgFormat(extension string, fimg *os.File, img image.Image) error {
