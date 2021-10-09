@@ -9,13 +9,16 @@ import (
 	"image/png"
 	"os"
 
+	"fyne.io/fyne"
+	"fyne.io/fyne/app"
+	"fyne.io/fyne/canvas"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/plotutil"
 	"gonum.org/v1/plot/vg"
 )
 
 func main() {
+
 	// imgName := "among.png"
 	imgName := "paisaje.jpg"
 	img, err := loadImage(imgName)
@@ -38,13 +41,41 @@ func main() {
 	err = saveImage(outputImageNameNegative, img3)
 	check(err)*/
 	// fmt.Println(tableGray)
-	_, colorsGray := scaleGray(img, width, height) // colorsGray
+	a := app.New()
+	w := a.NewWindow("Hello")
+	image := a.NewWindow("paisaje.jpg")
+	image.Resize(fyne.NewSize(800, 400))
+	imge := canvas.NewImageFromFile("paisaje.jpg")
+	image.SetContent(imge)
+	w.Resize(fyne.NewSize(500, 500))
+	/*
+		hello := widget.NewLabel("Hello Fyne!")
+		w.SetContent(container.NewVBox(
+			hello,
+			widget.NewButton("Imagen", func() {
+				image := a.NewWindow("image")
+				img := canvas.NewImageFromFile("paisaje.jpg")
+				image.SetContent(img)
+			}),
+			widget.NewButton("Herramientas", func() {
+				fmt.Println("segundo")
+			}),
+		))*/
+
+	fileItem := fyne.NewMenuItem("Open image", func() { image.Show(); fmt.Println("Opening the image") })
+	fileItem2 := fyne.NewMenuItem("Save image", func() { fmt.Println("Saving the image") })
+
+	menuItem := fyne.NewMenu("File", fileItem, fileItem2)
+	menuItem2 := fyne.NewMenu("Options")
+	menu := fyne.NewMainMenu(menuItem, menuItem2)
+	w.SetMainMenu(menu)
+	w.ShowAndRun()
+	_, colorsGray, values := scaleGray(img, width, height) // colorsGray
 	histogram := histogram(colorsGray)
 	// fmt.Println(histogram)
 	min, max := valueRange(histogram)
 	fmt.Printf("Rango de valores: [%d,%d]\n", min, max)
-	plote(histogram)
-
+	plote(histogram, values)
 }
 
 func loadImage(fileName string) (image.Image, error) {
@@ -78,8 +109,9 @@ func saveImage(fileName string, img image.Image) error {
 	return err
 }
 
-func scaleGray(img image.Image, width, height int) (*image.Gray, []uint32) {
-	var colors []uint32
+func scaleGray(img image.Image, width, height int) (*image.Gray, []uint64, plotter.Values) {
+	var colors []uint64
+	var values plotter.Values
 
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
 	for i := 0; i < width; i++ {
@@ -87,13 +119,15 @@ func scaleGray(img image.Image, width, height int) (*image.Gray, []uint32) {
 			r, g, b, _ := img.At(i, j).RGBA()
 			r, g, b = r>>8, g>>8, b>>8
 			//y := 0.375*float64(r) + 0.5*float64(g) + 0.125*float64(b)
-			y := 0.299*float32(r) + 0.587*float32(g) + 0.114*float32(b) // our
+			y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b) // our
 			grayColor := color.Gray{uint8(y)}
 			img2.Set(i, j, grayColor)
-			colors = append(colors, uint32(y))
+			colors = append(colors, uint64(y))
+			values = append(values, float64(y))
+
 		}
 	}
-	return img2, colors
+	return img2, colors, values
 }
 
 func negative(img *image.Gray, lutGray map[int]int, width, height int) *image.Gray {
@@ -115,7 +149,7 @@ func lutGray() map[int]int {
 	return table
 }
 
-func histogram(colors []uint32) map[int]int {
+func histogram(colors []uint64) map[int]int {
 	histogram := make(map[int]int)
 	for i := 0; i <= 255; i++ {
 		cont := 0
@@ -146,24 +180,22 @@ func valueRange(histogram map[int]int) (int, int) {
 	return min, max
 }
 
-func plote(histogram map[int]int) {
+func plote(histogram map[int]int, values plotter.Values) {
 
 	p := plot.New()
 
-	p.Title.Text = "Plotutil example"
-	p.X.Label.Text = "X"
-	p.Y.Label.Text = "Y"
-	pts := make(plotter.XYs, len(histogram))
-	for i := 0; i < len(histogram); i++ {
-		pts[i].X = float64(i)
-		pts[i].Y = float64(histogram[i])
-	}
-	err := plotutil.AddLinePoints(p, "First", pts)
-	check(err)
+	p.Title.Text = "Histogram plot"
 
-	// Save the plot to a PNG file.
-	err = p.Save(4*vg.Inch, 4*vg.Inch, "points.png")
-	check(err)
+	hist, err2 := plotter.NewHist(values, len(histogram))
+	if err2 != nil {
+		panic(err2)
+	}
+	//hist.Normalize(1)
+	p.Add(hist)
+
+	if err := p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"); err != nil {
+		panic(err)
+	}
 }
 
 func checkImgFormat(extension string, fimg *os.File, img image.Image) error {
