@@ -23,34 +23,24 @@ func main() {
 	interfaz()
 }
 
-func entry(placeholder string) *widget.Entry {
-	w := widget.NewEntry()
-	w.SetPlaceHolder(placeholder)
-	return w
-}
-
-func label(text string) *widget.Label {
-	w := widget.NewLabel(text)
-	return w
-}
-
-func group(title string, visible bool, children ...fyne.CanvasObject) *widget.Group {
-	w := widget.NewGroup(title, children...)
-	if visible {
-		w.Show()
-	} else {
-		w.Hide()
-	}
-	return w
-}
-
 func interfaz() {
-	a := app.New()
-	mainWindow := a.NewWindow("Hello")
+	application := app.New()
+	mainWindow := application.NewWindow("Hello")
 	mainWindow.Resize(fyne.NewSize(500, 500))
 
+	fileItem := buttonOpen(application)
+	fileItem2 := fyne.NewMenuItem("Save image", func() { fmt.Println("Saving the image") })
+
+	menuItem := fyne.NewMenu("File", fileItem, fileItem2)
+	menuItem2 := fyne.NewMenu("Options")
+	menu := fyne.NewMainMenu(menuItem, menuItem2)
+	mainWindow.SetMainMenu(menu)
+	mainWindow.ShowAndRun()
+}
+
+func buttonOpen(application fyne.App) *fyne.MenuItem {
 	fileItem := fyne.NewMenuItem("Open image", func() {
-		fileWindow := a.NewWindow("OpenFile")
+		fileWindow := application.NewWindow("OpenFile")
 		fileWindow.Resize(fyne.NewSize(500, 500))
 
 		input := widget.NewEntry()
@@ -64,24 +54,18 @@ func interfaz() {
 			fmt.Printf("Width: %d\n", width)
 			fmt.Printf("Height: %d\n", height)
 
-			image := a.NewWindow(input.Text)
-			image.Resize(fyne.NewSize(width, height))
-			imge := canvas.NewImageFromFile(input.Text)
-			image.SetContent(imge)
-			image.Show()
+			imageWindow := application.NewWindow(input.Text)
+			imageWindow.Resize(fyne.NewSize(width, height))
+			image := canvas.NewImageFromFile(input.Text)
+			imageWindow.SetContent(image)
+			imageWindow.Show()
 			fileWindow.Close()
 		}))
 
 		fileWindow.SetContent(content)
 		fileWindow.Show()
 	})
-	fileItem2 := fyne.NewMenuItem("Save image", func() { fmt.Println("Saving the image") })
-
-	menuItem := fyne.NewMenu("File", fileItem, fileItem2)
-	menuItem2 := fyne.NewMenu("Options")
-	menu := fyne.NewMainMenu(menuItem, menuItem2)
-	mainWindow.SetMainMenu(menu)
-	mainWindow.ShowAndRun()
+	return fileItem
 }
 
 func loadImage(fileName string) (image.Image, error) {
@@ -222,44 +206,3 @@ func check(err error) {
 		panic(err)
 	}
 }
-
-/* imgName := "among.png"
-imgName := "paisaje.jpg"
-img, err := loadImage(imgName)
-check(err)
-
-width := img.Bounds().Dx()
-height := img.Bounds().Dy()
-
-fmt.Printf("Width: %d\n", width)
-fmt.Printf("Height: %d\n", height)*/
-
-// outputImageName := "guardo.png"
-// outputImageName := "guardo.jpg"
-/*outputImageNameNegative := "guardo-negativo.jpg"
-img2, _ := scaleGray(img, width, height, outputImageName) // colorsGray
-err = saveImage(outputImageName, img2)
-check(err)
-tableGray := lutGray()
-img3 := negative(img2, tableGray, width, height)
-err = saveImage(outputImageNameNegative, img3)
-check(err)*/
-// fmt.Println(tableGray)
-
-/*_, colorsGray, values := scaleGray(img, width, height) // colorsGray
-histogram := histogram(colorsGray)
-// fmt.Println(histogram)
-min, max := valueRange(histogram)
-fmt.Printf("Rango de valores: [%d,%d]\n", min, max)
-plote(histogram, values)*/
-
-/*hello := widget.NewLabel("Hello Fyne!")
-w.SetContent(container.NewVBox(
-	hello,
-	widget.NewButton("Imagen", func() {
-		image.Show()
-	}),
-	widget.NewButton("Herramientas", func() {
-		fmt.Println("segundo")
-	}),
-))*/
