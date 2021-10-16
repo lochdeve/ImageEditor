@@ -61,7 +61,6 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 			imageWindow.Show()
 			fileWindow.Close()
 		}))
-
 		fileWindow.SetContent(content)
 		fileWindow.Show()
 	})
