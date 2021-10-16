@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/container"
 	"fyne.io/fyne/widget"
+	"github.com/kbinani/screenshot"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -45,9 +46,11 @@ func group(title string, visible bool, children ...fyne.CanvasObject) *widget.Gr
 }
 
 func interfaz() {
+	n := screenshot.GetDisplayBounds(0)
 	a := app.New()
 	mainWindow := a.NewWindow("Hello")
-	mainWindow.Resize(fyne.NewSize(500, 500))
+	//	mainWindow.Resize(fyne.NewSize(500, 500))
+	mainWindow.Resize(fyne.NewSize(n.Bounds().Dx(), n.Bounds().Dy()))
 
 	fileItem := fyne.NewMenuItem("Open image", func() {
 		fileWindow := a.NewWindow("OpenFile")
@@ -71,11 +74,26 @@ func interfaz() {
 			image.Show()
 			fileWindow.Close()
 		}))
-
 		fileWindow.SetContent(content)
 		fileWindow.Show()
 	})
+	//green := color.NRGBA{R: 0, G: 180, B: 0, A: 255}
+	/*text := canvas.NewText("text", green)
+	text.TextStyle.Bold = true
+	mycanvas.SetContent(text)
+	text1 := canvas.NewText("color.White", color.White)
+	text2 := canvas.NewText("co.White", color.White)
+	text3 := canvas.NewText("colorhe", color.White)
+
+	text4 := canvas.NewText("centered", color.White)
+	content := container.new(layout.NewHBoxLayout(), text1, text2, layout.NewSpacer(), text3)
+	centered := container.new(layout.NewVBoxLayout(), layout.NewSpacer(), text4, layout.NewSpacer())
+	mainWindow.SetContent(container.new(layout.NewHBoxLayout(), content, centered))*/
 	fileItem2 := fyne.NewMenuItem("Save image", func() { fmt.Println("Saving the image") })
+	label := widget.NewLabel("hla")
+	label.Position().Add(fyne.Position{1333, 100})
+
+	mainWindow.SetContent(label)
 
 	menuItem := fyne.NewMenu("File", fileItem, fileItem2)
 	menuItem2 := fyne.NewMenu("Options")
