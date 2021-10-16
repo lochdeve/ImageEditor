@@ -14,6 +14,7 @@ import (
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/container"
 	"fyne.io/fyne/widget"
+	"github.com/kbinani/screenshot"
 	"gonum.org/v1/plot"
 	"gonum.org/v1/plot/plotter"
 	"gonum.org/v1/plot/vg"
@@ -26,7 +27,9 @@ func main() {
 func interfaz() {
 	application := app.New()
 	mainWindow := application.NewWindow("Hello")
-	mainWindow.Resize(fyne.NewSize(500, 500))
+	// mainWindow.Resize(fyne.NewSize(500, 500))
+	window := screenshot.GetDisplayBounds(0)
+	mainWindow.Resize(fyne.NewSize(window.Bounds().Dx(), window.Bounds().Dy()))
 
 	fileItem := buttonOpen(application)
 	fileItem2 := fyne.NewMenuItem("Save image", func() { fmt.Println("Saving the image") })
