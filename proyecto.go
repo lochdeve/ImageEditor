@@ -45,6 +45,8 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 	fileItem := fyne.NewMenuItem("Open image", func() {
 		fileWindow := application.NewWindow("OpenFile")
 		fileWindow.Resize(fyne.NewSize(500, 500))
+		// window := screenshot.GetDisplayBounds(0)
+		// fileWindow.Resize(fyne.NewSize(window.Bounds().Dx()/2, window.Bounds().Dy()/2))
 
 		input := widget.NewEntry()
 		input.SetPlaceHolder("ejemplo.png")
@@ -61,6 +63,16 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 			imageWindow.Resize(fyne.NewSize(width, height))
 			image := canvas.NewImageFromFile(input.Text)
 			imageWindow.SetContent(image)
+
+			newItem := fyne.NewMenuItem("Histogram", func() { fmt.Println("Falta por hacer") })
+			newItem2 := fyne.NewMenuItem("Cumulative histogram", func() { fmt.Println("Falta por hacer") })
+			newItem3 := fyne.NewMenuItem("Scale gray", func() {
+				scaleGray(img, width, height)
+			})
+
+			menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
+			menu := fyne.NewMainMenu(menuItem)
+			imageWindow.SetMainMenu(menu)
 			imageWindow.Show()
 			fileWindow.Close()
 		}))
