@@ -41,6 +41,12 @@ func interfaz() {
 	mainWindow.ShowAndRun()
 }
 
+func newWindow(application fyne.App, width, height int, name string) fyne.Window {
+	window := application.NewWindow(name)
+	window.Resize(fyne.NewSize(width, height))
+	return window
+}
+
 func buttonOpen(application fyne.App) *fyne.MenuItem {
 	fileItem := fyne.NewMenuItem("Open image", func() {
 		fileWindow := application.NewWindow("OpenFile")
@@ -59,15 +65,15 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 			fmt.Printf("Width: %d\n", width)
 			fmt.Printf("Height: %d\n", height)
 
-			imageWindow := application.NewWindow(input.Text)
-			imageWindow.Resize(fyne.NewSize(width, height))
+			imageWindow := newWindow(application, img.Bounds().Dx(), img.Bounds().Dy(), input.Text)
 			image := canvas.NewImageFromFile(input.Text)
 			imageWindow.SetContent(image)
 
 			newItem := fyne.NewMenuItem("Histogram", func() { fmt.Println("Falta por hacer") })
 			newItem2 := fyne.NewMenuItem("Cumulative histogram", func() { fmt.Println("Falta por hacer") })
 			newItem3 := fyne.NewMenuItem("Scale gray", func() {
-				scaleGray(img, width, height)
+				img := scaleGray(img, width, height)
+				GrayButton(application, img, input.Text)
 			})
 
 			menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
@@ -80,6 +86,32 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 		fileWindow.Show()
 	})
 	return fileItem
+}
+
+func GrayButton(application fyne.App, img *image.Gray, input string) {
+	width := img.Bounds().Dx()
+	height := img.Bounds().Dy()
+	window := newWindow(application, width, height, input)
+	image := canvas.NewImageFromImage(img)
+	window.SetContent(image)
+	colors, values := colorsValues(img)
+
+	newItem := fyne.NewMenuItem("Histogram", func() {
+		plote(histogram(colors), values)
+	})
+	newItem2 := fyne.NewMenuItem("Cumulative histogram", func() {
+		plote(lutGray(), cumulativeHistogram(values))
+	})
+	newItem3 := fyne.NewMenuItem("Negative", func() {
+		img := negative(img, lutGray(), width, height)
+		GrayButton(application, img, input)
+	})
+
+	menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
+	menu := fyne.NewMainMenu(menuItem)
+	window.SetMainMenu(menu)
+	window.Show()
+	window.Close()
 }
 
 func loadImage(fileName string) (image.Image, error) {
@@ -113,10 +145,7 @@ func saveImage(fileName string, img image.Image) error {
 	return err
 }
 
-func scaleGray(img image.Image, width, height int) (*image.Gray, []uint64, plotter.Values) {
-	var colors []uint64
-	var values plotter.Values
-
+func scaleGray(img image.Image, width, height int) *image.Gray {
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
@@ -126,12 +155,23 @@ func scaleGray(img image.Image, width, height int) (*image.Gray, []uint64, plott
 			y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b) // our
 			grayColor := color.Gray{uint8(y)}
 			img2.Set(i, j, grayColor)
-			colors = append(colors, uint64(y))
-			values = append(values, float64(y))
-
 		}
 	}
-	return img2, colors, values
+	return img2
+}
+
+func colorsValues(image *image.Gray) ([]uint64, plotter.Values) {
+	var colors []uint64
+	var values plotter.Values
+
+	for i := 0; i < image.Bounds().Dx(); i++ {
+		for j := 0; j < image.Bounds().Dy(); j++ {
+			y := image.GrayAt(i, j).Y
+			colors = append(colors, uint64(y))
+			values = append(values, float64(y))
+		}
+	}
+	return colors, values
 }
 
 func negative(img *image.Gray, lutGray map[int]int, width, height int) *image.Gray {
@@ -168,6 +208,17 @@ func histogram(colors []uint64) map[int]int {
 	return histogram
 }
 
+func cumulativeHistogram(values plotter.Values) plotter.Values {
+	var newValues plotter.Values
+	var cont float64
+	for i := 0; i <= len(values); i++ {
+		cont += values[i]
+		values = append(values, cont)
+	}
+	// fmt.Println(histogram)
+	return newValues
+}
+
 func valueRange(histogram map[int]int) (int, int) {
 	// 0 Negro
 	// 255 Blanco
@@ -194,7 +245,7 @@ func plote(histogram map[int]int, values plotter.Values) {
 	if err2 != nil {
 		panic(err2)
 	}
-	//hist.Normalize(1)
+	// hist.Normalize(1)
 	p.Add(hist)
 
 	if err := p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"); err != nil {
