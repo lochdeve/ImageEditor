@@ -1,23 +1,24 @@
 package main
 
 import (
-	"errors"
 	"fmt"
 	"image"
 	"image/color"
-	"image/jpeg"
 	"image/png"
 	"os"
+	"strconv"
+
+	histogram "vpc/pkg/histogram"
+	loadandsave "vpc/pkg/loadandsave"
+	operations "vpc/pkg/operations"
 
 	"fyne.io/fyne"
 	"fyne.io/fyne/app"
 	"fyne.io/fyne/canvas"
 	"fyne.io/fyne/container"
+	"fyne.io/fyne/dialog"
 	"fyne.io/fyne/widget"
 	"github.com/kbinani/screenshot"
-	"gonum.org/v1/plot"
-	"gonum.org/v1/plot/plotter"
-	"gonum.org/v1/plot/vg"
 )
 
 func main() {
@@ -44,6 +45,7 @@ func interfaz() {
 func newWindow(application fyne.App, width, height int, name string) fyne.Window {
 	window := application.NewWindow(name)
 	window.Resize(fyne.NewSize(width, height))
+	// window.Canvas().Focused().FocusGained()
 	return window
 }
 
@@ -58,25 +60,31 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 		input.SetPlaceHolder("ejemplo.png")
 
 		content := container.NewVBox(input, widget.NewButton("Open", func() {
-			img, err := loadImage(input.Text)
-			check(err)
+			img, format, err := loadandsave.LoadImage(input.Text)
+			loadandsave.Check(err)
 			width := img.Bounds().Dx()
 			height := img.Bounds().Dy()
-			fmt.Printf("Width: %d\n", width)
-			fmt.Printf("Height: %d\n", height)
+			// fmt.Printf("Width: %d\n", width)
+			// fmt.Printf("Height: %d\n", height)
 
 			imageWindow := newWindow(application, img.Bounds().Dx(), img.Bounds().Dy(), input.Text)
 			image := canvas.NewImageFromFile(input.Text)
 			imageWindow.SetContent(image)
 
-			newItem := fyne.NewMenuItem("Histogram", func() { fmt.Println("Falta por hacer") })
-			newItem2 := fyne.NewMenuItem("Cumulative histogram", func() { fmt.Println("Falta por hacer") })
-			newItem3 := fyne.NewMenuItem("Scale gray", func() {
+			// newItem := fyne.NewMenuItem("Histogram", func() { fmt.Println("Falta por hacer") })
+			// newItem2 := fyne.NewMenuItem("Cumulative histogram", func() { fmt.Println("Falta por hacer") })
+			newItem := fyne.NewMenuItem("Image Information", func() {
+				information := "Format: " + format + "\nSize:\n\tWidth: " +
+					strconv.Itoa(width) + "\n\tHeight: " + strconv.Itoa(height)
+				dialog.ShowInformation("Information", information, imageWindow)
+			})
+			newItem2 := fyne.NewMenuItem("Scale gray", func() {
 				img := scaleGray(img, width, height)
 				GrayButton(application, img, input.Text)
 			})
 
-			menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
+			// menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
+			menuItem := fyne.NewMenu("Operations", newItem, newItem2)
 			menu := fyne.NewMainMenu(menuItem)
 			imageWindow.SetMainMenu(menu)
 			imageWindow.Show()
@@ -94,55 +102,33 @@ func GrayButton(application fyne.App, img *image.Gray, input string) {
 	window := newWindow(application, width, height, input)
 	image := canvas.NewImageFromImage(img)
 	window.SetContent(image)
-	colors, values := colorsValues(img)
+	colors, values := operations.ColorsValues(img)
 
 	newItem := fyne.NewMenuItem("Histogram", func() {
-		plote(histogram(colors), values)
+		histogram.Plote(histogram.Histogram(colors), values)
 	})
 	newItem2 := fyne.NewMenuItem("Cumulative histogram", func() {
-		plote(lutGray(), cumulativeHistogram(values))
+		// plote(lutGray(), cumulativeHistogram(values))
 	})
 	newItem3 := fyne.NewMenuItem("Negative", func() {
-		img := negative(img, lutGray(), width, height)
+		img := operations.Negative(img, operations.LutGray(), width, height)
 		GrayButton(application, img, input)
 	})
 
+	newItem4 := fyne.NewMenuItem("Save Image", func() {
+		img := RGB(*img, width, height)
+		var fimg *os.File
+		fimg, _ = os.Create("hola.png")
+		defer fimg.Close()
+		_ = png.Encode(fimg, img)
+	})
+
 	menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
-	menu := fyne.NewMainMenu(menuItem)
+	menuItem2 := fyne.NewMenu("Save Image", newItem4)
+	menu := fyne.NewMainMenu(menuItem, menuItem2)
 	window.SetMainMenu(menu)
 	window.Show()
 	window.Close()
-}
-
-func loadImage(fileName string) (image.Image, error) {
-	fmt.Println("Load the image:", fileName)
-
-	fimg, err := os.Open(fileName)
-	check(err)
-
-	// fmt.Println("Dirección de memoria de la imagen: ", fimg)
-	defer fimg.Close()
-
-	img, _, err := image.Decode(fimg)
-	check(err)
-
-	return img, err
-}
-
-func saveImage(fileName string, img image.Image) error {
-	fmt.Println("Saving the image:", fileName)
-
-	var err error
-	var fimg *os.File
-	extension := fileName[len(fileName)-3:]
-	if extension == "jpg" || extension == "jpeg" || extension == "png" {
-		fimg, err = os.Create(fileName)
-		check(err)
-	}
-	defer fimg.Close()
-
-	err = checkImgFormat(extension, fimg, img)
-	return err
 }
 
 func scaleGray(img image.Image, width, height int) *image.Gray {
@@ -160,114 +146,19 @@ func scaleGray(img image.Image, width, height int) *image.Gray {
 	return img2
 }
 
-func colorsValues(image *image.Gray) ([]uint64, plotter.Values) {
-	var colors []uint64
-	var values plotter.Values
-
-	for i := 0; i < image.Bounds().Dx(); i++ {
-		for j := 0; j < image.Bounds().Dy(); j++ {
-			y := image.GrayAt(i, j).Y
-			colors = append(colors, uint64(y))
-			values = append(values, float64(y))
-		}
-	}
-	return colors, values
-}
-
-func negative(img *image.Gray, lutGray map[int]int, width, height int) *image.Gray {
-	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+func RGB(img image.Gray, width, height int) *image.RGBA {
+	img2 := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
-			newColor := color.Gray{uint8(float32(lutGray[int(img.GrayAt(i, j).Y)]))}
-			img2.Set(i, j, newColor)
+			r, g, b, a := img.At(i, j).RGBA()
+			r, g, b = r>>8, g>>8, b>>8
+			rNuevo := float64(r) / 0.299
+			gNuevo := float64(g) / 0.587
+			bNuevo := float64(b) / 0.114
+			fmt.Println(uint(rNuevo), uint(gNuevo), uint(bNuevo))
+			rgbColor := color.RGBA{uint8(uint(rNuevo) << 8), uint8(uint(gNuevo) << 8), uint8(uint(bNuevo) << 8), uint8(a)}
+			img2.Set(i, j, rgbColor)
 		}
 	}
 	return img2
-}
-
-func lutGray() map[int]int {
-	table := make(map[int]int)
-	for i := 0; i <= 255; i++ {
-		table[i] = 255 - i
-	}
-	return table
-}
-
-func histogram(colors []uint64) map[int]int {
-	histogram := make(map[int]int)
-	for i := 0; i <= 255; i++ {
-		cont := 0
-		for j := 0; j < len(colors); j++ {
-			if i == int(colors[j]) {
-				cont++
-			}
-		}
-		histogram[i] = cont
-	}
-	// fmt.Println(histogram)
-	return histogram
-}
-
-func cumulativeHistogram(values plotter.Values) plotter.Values {
-	var newValues plotter.Values
-	var cont float64
-	for i := 0; i <= len(values); i++ {
-		cont += values[i]
-		values = append(values, cont)
-	}
-	// fmt.Println(histogram)
-	return newValues
-}
-
-func valueRange(histogram map[int]int) (int, int) {
-	// 0 Negro
-	// 255 Blanco
-	min := 300 // Negro
-	max := 0   // Blanco
-	for i := 0; i < len(histogram); i++ {
-		if i >= max && histogram[i] != 0 {
-			max = i
-		}
-		if i <= min && histogram[i] != 0 {
-			min = i
-		}
-	}
-	return min, max
-}
-
-func plote(histogram map[int]int, values plotter.Values) {
-
-	p := plot.New()
-
-	p.Title.Text = "Histogram plot"
-
-	hist, err2 := plotter.NewHist(values, len(histogram))
-	if err2 != nil {
-		panic(err2)
-	}
-	// hist.Normalize(1)
-	p.Add(hist)
-
-	if err := p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"); err != nil {
-		panic(err)
-	}
-}
-
-func checkImgFormat(extension string, fimg *os.File, img image.Image) error {
-	var err error
-	switch extension {
-	case "jpg", "jpeg":
-		err = jpeg.Encode(fimg, img, nil)
-	case "png":
-		err = png.Encode(fimg, img)
-	default:
-		err = errors.New("unsupported format")
-	}
-	return err
-}
-
-func check(err error) {
-	if err != nil {
-		panic(err)
-	}
 }
