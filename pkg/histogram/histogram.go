@@ -6,8 +6,8 @@ import (
 	"gonum.org/v1/plot/vg"
 )
 
-func Histogram(colors []uint64) map[int]int {
-	histogram := make(map[int]int)
+func NumbersOfPixel(colors []uint64) map[int]int {
+	numbersofpixel := make(map[int]int)
 	for i := 0; i <= 255; i++ {
 		cont := 0
 		for j := 0; j < len(colors); j++ {
@@ -15,10 +15,10 @@ func Histogram(colors []uint64) map[int]int {
 				cont++
 			}
 		}
-		histogram[i] = cont
+		numbersofpixel[i] = cont
 	}
-	// fmt.Println(histogram)
-	return histogram
+	// fmt.Println(numbersofpixel)
+	return numbersofpixel
 }
 
 func Plote(histogram map[int]int, values plotter.Values) {

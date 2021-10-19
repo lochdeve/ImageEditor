@@ -7,32 +7,33 @@ import (
 	"image/jpeg"
 	"image/png"
 	"os"
+	"strings"
 )
 
 func LoadImage(fileName string) (image.Image, string, error) {
 	fmt.Println("Load the image:", fileName)
 
 	fimg, err := os.Open(fileName)
-	Check(err)
+	check(err)
 
 	// fmt.Println("Dirección de memoria de la imagen: ", fimg)
 	defer fimg.Close()
 
 	img, format, err := image.Decode(fimg)
-	Check(err)
+	check(err)
 
 	return img, format, err
 }
 
 func SaveImage(fileName string, img image.Image) error {
-	fmt.Println("Saving the image:", fileName)
-
+	// fmt.Println("Saving the image:", fileName)
 	var err error
 	var fimg *os.File
-	extension := fileName[len(fileName)-3:] // Mirar esto
+	parts := strings.Split(fileName, ".")
+	extension := parts[1]
 	if extension == "jpg" || extension == "jpeg" || extension == "png" {
 		fimg, err = os.Create(fileName)
-		Check(err)
+		check(err)
 	}
 	defer fimg.Close()
 
@@ -53,7 +54,7 @@ func checkImgFormat(extension string, fimg *os.File, img image.Image) error {
 	return err
 }
 
-func Check(err error) {
+func check(err error) {
 	if err != nil {
 		panic(err)
 	}

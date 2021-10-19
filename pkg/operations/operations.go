@@ -3,6 +3,7 @@ package operations
 import (
 	"image"
 	"image/color"
+	"math"
 
 	"gonum.org/v1/plot/plotter"
 )
@@ -40,7 +41,7 @@ func LutGray() map[int]int {
 	return table
 }
 
-func valueRange(histogram map[int]int) (int, int) {
+func ValueRange(histogram map[int]int) (int, int) {
 	// 0 Negro
 	// 255 Blanco
 	min := 300 // Negro
@@ -54,4 +55,27 @@ func valueRange(histogram map[int]int) (int, int) {
 		}
 	}
 	return min, max
+}
+
+func Brightness(numbersofpixels map[int]int) int {
+	average := 0
+	numberOfColors := 0
+	for i := 0; i < len(numbersofpixels); i++ {
+		if numbersofpixels[i] != 0 {
+			average += i
+			numberOfColors++
+		}
+	}
+	// println(average / numberOfColors)
+	return average / numberOfColors
+}
+
+func Contrast(numbersOfPixels map[int]int, average int, size int) int {
+	calculations := 0.0
+	for i := 0; i < len(numbersOfPixels); i++ {
+		calculations += float64(numbersOfPixels[i]) * math.Pow(float64(i-average), 2)
+	}
+	contrast := int(math.Sqrt(float64(calculations) / float64(size)))
+	// println(contrast)
+	return contrast
 }
