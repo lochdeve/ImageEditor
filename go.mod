@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	fyne.io/fyne v1.4.3
+	github.com/kbinani/screenshot v0.0.0-20210720154843-7d3a670d8329
 	gonum.org/v1/plot v0.10.0
 )
 
@@ -23,7 +24,6 @@ require (
 	github.com/goki/freetype v0.0.0-20181231101311-fa8a33aabaff // indirect
 	github.com/golang/freetype v0.0.0-20170609003504-e2365dfdc4a0 // indirect
 	github.com/jezek/xgb v0.0.0-20210312150743-0e0f116e1240 // indirect
-	github.com/kbinani/screenshot v0.0.0-20210720154843-7d3a670d8329 // indirect
 	github.com/lxn/win v0.0.0-20210218163916-a377121e959e // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/srwiley/oksvg v0.0.0-20200311192757-870daf9aa564 // indirect

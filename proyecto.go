@@ -53,21 +53,21 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 	fileItem := fyne.NewMenuItem("Open image", func() {
 		fileWindow := application.NewWindow("OpenFile")
 		fileWindow.Resize(fyne.NewSize(500, 500))
-		// window := screenshot.GetDisplayBounds(0)
-		// fileWindow.Resize(fyne.NewSize(window.Bounds().Dx()/2, window.Bounds().Dy()/2))
+		window := screenshot.GetDisplayBounds(0)
+		fileWindow.Resize(fyne.NewSize(window.Bounds().Dx()/2, window.Bounds().Dy()/2))
 
 		input := widget.NewEntry()
 		input.SetPlaceHolder("ejemplo.png")
 
 		content := container.NewVBox(input, widget.NewButton("Open", func() {
-			img, format, err := loadandsave.LoadImage(input.Text)
+			colorImage, format, err := loadandsave.LoadImage(input.Text)
 			loadandsave.Check(err)
-			width := img.Bounds().Dx()
-			height := img.Bounds().Dy()
+			width := colorImage.Bounds().Dx()
+			height := colorImage.Bounds().Dy()
 			// fmt.Printf("Width: %d\n", width)
 			// fmt.Printf("Height: %d\n", height)
 
-			imageWindow := newWindow(application, img.Bounds().Dx(), img.Bounds().Dy(), input.Text)
+			imageWindow := newWindow(application, colorImage.Bounds().Dx(), colorImage.Bounds().Dy(), input.Text)
 			image := canvas.NewImageFromFile(input.Text)
 			imageWindow.SetContent(image)
 
@@ -79,8 +79,8 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 				dialog.ShowInformation("Information", information, imageWindow)
 			})
 			newItem2 := fyne.NewMenuItem("Scale gray", func() {
-				img := scaleGray(img, width, height)
-				GrayButton(application, img, input.Text)
+				grayImage := scaleGray(colorImage, width, height)
+				GrayButton(application, grayImage, colorImage, input.Text)
 			})
 
 			// menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
@@ -96,35 +96,38 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 	return fileItem
 }
 
-func GrayButton(application fyne.App, img *image.Gray, input string) {
-	width := img.Bounds().Dx()
-	height := img.Bounds().Dy()
+func GrayButton(application fyne.App, grayImage *image.Gray, colorImage image.Image, input string) {
+	width := grayImage.Bounds().Dx()
+	height := grayImage.Bounds().Dy()
 	window := newWindow(application, width, height, input)
-	image := canvas.NewImageFromImage(img)
+	image := canvas.NewImageFromImage(grayImage)
 	window.SetContent(image)
-	colors, values := operations.ColorsValues(img)
-
+	colors, values := operations.ColorsValues(grayImage)
+	histogramData := histogram.Histogram(colors)
 	newItem := fyne.NewMenuItem("Histogram", func() {
-		histogram.Plote(histogram.Histogram(colors), values)
+		histogram.Plote(histogramData, values)
 	})
 	newItem2 := fyne.NewMenuItem("Cumulative histogram", func() {
 		// plote(lutGray(), cumulativeHistogram(values))
 	})
 	newItem3 := fyne.NewMenuItem("Negative", func() {
-		img := operations.Negative(img, operations.LutGray(), width, height)
-		GrayButton(application, img, input)
+		grayImage := operations.Negative(grayImage, operations.LutGray(), width, height)
+		GrayButton(application, grayImage, colorImage, input)
 	})
 
-	newItem4 := fyne.NewMenuItem("Save Image", func() {
-		img := RGB(*img, width, height)
+	newItem4 := fyne.NewMenuItem("Convert to RGB", func() {
+		loadandsave.SaveImage("RGB.jpg", colorImage)
+	})
+
+	newItem5 := fyne.NewMenuItem("Save image", func() {
 		var fimg *os.File
 		fimg, _ = os.Create("hola.png")
 		defer fimg.Close()
-		_ = png.Encode(fimg, img)
+		_ = png.Encode(fimg, grayImage)
 	})
 
-	menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3)
-	menuItem2 := fyne.NewMenu("Save Image", newItem4)
+	menuItem := fyne.NewMenu("Operations", newItem, newItem2, newItem3, newItem4)
+	menuItem2 := fyne.NewMenu("Save Image", newItem5)
 	menu := fyne.NewMainMenu(menuItem, menuItem2)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -138,7 +141,7 @@ func scaleGray(img image.Image, width, height int) *image.Gray {
 			r, g, b, _ := img.At(i, j).RGBA()
 			r, g, b = r>>8, g>>8, b>>8
 			//y := 0.375*float64(r) + 0.5*float64(g) + 0.125*float64(b)
-			y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b) // our
+			y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
 			grayColor := color.Gray{uint8(y)}
 			img2.Set(i, j, grayColor)
 		}

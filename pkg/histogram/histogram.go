@@ -32,7 +32,6 @@ func Plote(histogram map[int]int, values plotter.Values) {
 	}
 	// hist.Normalize(1)
 	p.Add(hist)
-
 	if err := p.Save(3*vg.Inch, 3*vg.Inch, "hist.png"); err != nil {
 		panic(err)
 	}
