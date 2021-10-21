@@ -226,7 +226,7 @@ func calculate(image *image.Gray, width, height int, format string) ([]uint64,
 	colors, values := operations.ColorsValues(image)
 	numbersOfPixel := histogram.NumbersOfPixel(colors)
 	min, max := operations.ValueRange(numbersOfPixel)
-	brightness := operations.Brightness(numbersOfPixel)
+	brightness := operations.Brightness(numbersOfPixel, width*height)
 	contrast := operations.Contrast(numbersOfPixel, brightness, width*height)
 	return colors, values, numbersOfPixel, min, max, brightness,
 		contrast

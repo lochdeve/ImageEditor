@@ -57,17 +57,13 @@ func ValueRange(histogram map[int]int) (int, int) {
 	return min, max
 }
 
-func Brightness(numbersOfPixels map[int]int) int {
+func Brightness(numbersOfPixels map[int]int, size int) int {
 	sumValues := 0
-	numberOfColors := 0
 	for i := 0; i < len(numbersOfPixels); i++ {
-		if numbersOfPixels[i] != 0 {
-			sumValues += i
-			numberOfColors++
-		}
+		sumValues += i * numbersOfPixels[i]
 	}
 	// println(average / numberOfColors)
-	return sumValues / numberOfColors
+	return sumValues / size
 }
 
 func Contrast(numbersOfPixels map[int]int, average, size int) int {
