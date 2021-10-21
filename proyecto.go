@@ -1,23 +1,83 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"strconv"
+	"strings"
 
 	histogram "vpc/pkg/histogram"
 	loadandsave "vpc/pkg/loadandsave"
 	operations "vpc/pkg/operations"
 
-	"fyne.io/fyne"
-	"fyne.io/fyne/app"
-	"fyne.io/fyne/canvas"
-	"fyne.io/fyne/container"
-	"fyne.io/fyne/dialog"
-	"fyne.io/fyne/widget"
+	"fyne.io/fyne/v2"
+	"fyne.io/fyne/v2/app"
+	"fyne.io/fyne/v2/canvas"
+	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/dialog"
+	"fyne.io/fyne/v2/driver/desktop"
+	"fyne.io/fyne/v2/storage"
+	"fyne.io/fyne/v2/widget"
 	"github.com/kbinani/screenshot"
 	"gonum.org/v1/plot/plotter"
 )
+
+type MyWidget struct {
+	widget.Icon
+	image image.Image
+}
+
+func new(image1 image.Image) *MyWidget {
+	m := &MyWidget{image: image1}
+	m.ExtendBaseWidget(m)
+	return m
+}
+
+func (t *MyWidget) Tapped(_ *fyne.PointEvent) {
+	fmt.Println("I have been tapped")
+}
+
+func (w *MyWidget) FocusGained() {
+	fmt.Println("FocusGained")
+}
+
+// FocusLost is a hook called by the focus handling logic after this object lost the focus.
+func (w *MyWidget) FocusLost() {
+	fmt.Println("Lost focus")
+}
+
+// TypedRune is a hook called by the input handling logic on text input events if this object is focused.
+func (w *MyWidget) TypedRune(_ rune) {
+
+}
+
+// TypedKey is a hook called by the input handling logic on key events if this object is focused.
+func (w *MyWidget) TypedKey(_ *fyne.KeyEvent) {
+
+}
+
+// MouseIn is a hook that is called if the mouse pointer enters the element.
+func (w *MyWidget) MouseIn(*desktop.MouseEvent) {
+	fmt.Println("Inside")
+}
+
+// MouseMoved is a hook that is called if the mouse pointer moved over the element.
+func (w *MyWidget) MouseMoved(hola *desktop.MouseEvent) {
+	fmt.Println("It moves")
+	fmt.Println()
+	fmt.Println(w.image.At(int(hola.AbsolutePosition.X), int(hola.AbsolutePosition.Y)).RGBA())
+
+}
+
+// MouseOut is a hook that is called if the mouse pointer leaves the element.
+func (w *MyWidget) MouseOut() {
+	fmt.Println("get out")
+}
+
+func (mouse *MyWidget) CreateRenderer() fyne.WidgetRenderer {
+	return widget.NewSimpleRenderer(canvas.NewImageFromImage(mouse.image))
+}
 
 func main() {
 	interfaz()
@@ -28,9 +88,8 @@ func interfaz() {
 	mainWindow := application.NewWindow("Hello")
 	// mainWindow.Resize(fyne.NewSize(500, 500))
 	window := screenshot.GetDisplayBounds(0)
-	mainWindow.Resize(fyne.NewSize(window.Bounds().Dx(), window.Bounds().Dy()))
-
-	fileItem := buttonOpen(application)
+	mainWindow.Resize(fyne.NewSize(float32(window.Bounds().Dx()), float32(window.Bounds().Dy())))
+	fileItem := buttonOpen(application, mainWindow)
 
 	newItem := fyne.NewMenuItem("Quit", func() {
 		mainWindow.Close()
@@ -47,63 +106,57 @@ func interfaz() {
 
 func newWindow(application fyne.App, width, height int, name string) fyne.Window {
 	window := application.NewWindow(name)
-	window.Resize(fyne.NewSize(width, height))
+	window.Resize(fyne.NewSize(float32(width), float32(height)))
 	// window.Canvas().Focused().FocusGained()
 	return window
 }
 
-func buttonOpen(application fyne.App) *fyne.MenuItem {
+func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 	fileItem := fyne.NewMenuItem("Open image", func() {
-		fileWindow := application.NewWindow("OpenFile")
-		fileWindow.Resize(fyne.NewSize(500, 500))
-		// fileWindow.CenterOnScreen()
-		// window := screenshot.GetDisplayBounds(0)
-		// fileWindow.Resize(fyne.NewSize(window.Bounds().Dx()/2, window.Bounds().Dy()/2))
+		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if reader != nil {
+				fileName := reader.URI().String()[7:]
+				colorImage, format, err := loadandsave.LoadImage(fileName)
+				if err != nil {
+					dialog.ShowError(err, window)
+				} else {
+					width := colorImage.Bounds().Dx()
+					height := colorImage.Bounds().Dy()
+					grayImage := scaleGray(colorImage, width, height)
+					_, _, _, min, max, brightness, contrast := calculate(grayImage, width, height, format)
+					informationTape := information(format, width, height, min, max, brightness, contrast)
+					lutGray := operations.LutGray()
 
-		input := widget.NewEntry()
-		input.SetPlaceHolder("example.png")
+					windowName := strings.Split(fileName, "/")
+					imageWindow := newWindow(application, colorImage.Bounds().Dx(), colorImage.Bounds().Dy(), windowName[len(windowName)-1])
+					image := canvas.NewImageFromFile(fileName)
+					text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
+					canvasText := canvas.NewText(text, color.Opaque)
+					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, new(grayImage)))
+					//imageWindow.SetContent(new())
+					newItem := fyne.NewMenuItem("Image Information", func() {
+						dialog.ShowInformation("Information", informationTape, imageWindow)
+					})
 
-		content := container.NewVBox(input, widget.NewButton("Open", func() {
-			colorImage, format, err := loadandsave.LoadImage(input.Text)
-			if err != nil {
-				dialog.ShowError(err, fileWindow)
-			} else {
-				width := colorImage.Bounds().Dx()
-				height := colorImage.Bounds().Dy()
-				grayImage := scaleGray(colorImage, width, height)
-				_, _, _, min, max, brightness, contrast := calculate(grayImage, width, height, format)
-				informationTape := information(format, width, height, min, max, brightness, contrast)
-				lutGray := operations.LutGray()
+					newItem2 := fyne.NewMenuItem("Scale gray", func() {
+						GrayButton(application, grayImage, lutGray, windowName[len(windowName)-1], format, informationTape)
+					})
 
-				imageWindow := newWindow(application, colorImage.Bounds().Dx(), colorImage.Bounds().Dy(), input.Text)
-				image := canvas.NewImageFromFile(input.Text)
-				text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
-				canvasText := canvas.NewText(text, color.Opaque)
-				imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, image))
+					newItem3 := fyne.NewMenuItem("Quit", func() {
+						imageWindow.Close()
+					})
 
-				newItem := fyne.NewMenuItem("Image Information", func() {
-					dialog.ShowInformation("Information", informationTape, imageWindow)
-				})
+					newItemSeparator := fyne.NewMenuItemSeparator()
 
-				newItem2 := fyne.NewMenuItem("Scale gray", func() {
-					GrayButton(application, grayImage, lutGray, input.Text, format, informationTape)
-				})
-
-				newItem3 := fyne.NewMenuItem("Quit", func() {
-					imageWindow.Close()
-				})
-
-				newItemSeparator := fyne.NewMenuItemSeparator()
-
-				menuItem := fyne.NewMenu("Operations", newItem, newItemSeparator, newItem2, newItemSeparator, newItem3)
-				menu := fyne.NewMainMenu(menuItem)
-				imageWindow.SetMainMenu(menu)
-				imageWindow.Show()
-				fileWindow.Close()
+					menuItem := fyne.NewMenu("Operations", newItem, newItemSeparator, newItem2, newItemSeparator, newItem3)
+					menu := fyne.NewMainMenu(menuItem)
+					imageWindow.SetMainMenu(menu)
+					imageWindow.Show()
+				}
 			}
-		}))
-		fileWindow.SetContent(content)
-		fileWindow.Show()
+		}, window)
+		fd.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".jpeg"}))
+		fd.Show()
 	})
 	return fileItem
 }
@@ -123,7 +176,17 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 	})
 
 	newItem2 := fyne.NewMenuItem("Histogram", func() {
-		// histogram.Plote(numbersofpixel, values)
+		numbersofpixel, values := operations.ColorsValues(grayImage)
+		histogram.Plote(histogram.NumbersOfPixel(numbersofpixel), values)
+		histogramImage, _, _ := loadandsave.LoadImage("hist.png")
+		width := histogramImage.Bounds().Dx()
+		height := histogramImage.Bounds().Dy()
+		windowImage := newWindow(application, width, height, "histogram")
+		text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
+		canvasText := canvas.NewText(text, color.Opaque)
+		image := canvas.NewImageFromImage(histogramImage)
+		windowImage.SetContent(container.NewBorder(nil, canvasText, nil, nil, image))
+		windowImage.Show()
 	})
 
 	newItem3 := fyne.NewMenuItem("Cumulative histogram", func() {

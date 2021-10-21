@@ -16,8 +16,8 @@ func LoadImage(fileName string) (image.Image, string, error) {
 	var fimg *os.File
 	var img image.Image
 	format := ""
-	parts := strings.Split(fileName, ".")
-	if len(parts) == 2 {
+
+	if len(fileName) != 0 {
 		fimg, err = os.Open(fileName)
 		if err != nil {
 			return img, format, err
