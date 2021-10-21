@@ -73,6 +73,7 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 				grayImage := scaleGray(colorImage, width, height)
 				_, _, _, min, max, brightness, contrast := calculate(grayImage, width, height, format)
 				informationTape := information(format, width, height, min, max, brightness, contrast)
+				lutGray := operations.LutGray()
 
 				imageWindow := newWindow(application, colorImage.Bounds().Dx(), colorImage.Bounds().Dy(), input.Text)
 				image := canvas.NewImageFromFile(input.Text)
@@ -85,7 +86,7 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 				})
 
 				newItem2 := fyne.NewMenuItem("Scale gray", func() {
-					GrayButton(application, grayImage, input.Text, format, informationTape)
+					GrayButton(application, grayImage, lutGray, input.Text, format, informationTape)
 				})
 
 				newItem3 := fyne.NewMenuItem("Quit", func() {
@@ -107,7 +108,8 @@ func buttonOpen(application fyne.App) *fyne.MenuItem {
 	return fileItem
 }
 
-func GrayButton(application fyne.App, grayImage *image.Gray, input, format, information string) {
+func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int,
+	input, format, information string) {
 	width := grayImage.Bounds().Dx()
 	height := grayImage.Bounds().Dy()
 	window := newWindow(application, width, height, input)
@@ -129,8 +131,8 @@ func GrayButton(application fyne.App, grayImage *image.Gray, input, format, info
 	})
 
 	newItem4 := fyne.NewMenuItem("Negative", func() {
-		negativeImage := operations.Negative(grayImage, operations.LutGray(), width, height)
-		NegativeButton(application, negativeImage, format, "Negative")
+		negativeImage := operations.Negative(grayImage, lutGray, width, height)
+		NegativeButton(application, negativeImage, lutGray, format, "Negative")
 	})
 
 	newItem5 := fyne.NewMenuItem("Convert to RGB", func() {
@@ -152,7 +154,8 @@ func GrayButton(application fyne.App, grayImage *image.Gray, input, format, info
 	window.Close()
 }
 
-func NegativeButton(application fyne.App, negativeImage *image.Gray, format, input string) {
+func NegativeButton(application fyne.App, negativeImage *image.Gray,
+	lutGray map[int]int, format, input string) {
 	width := negativeImage.Bounds().Dx()
 	height := negativeImage.Bounds().Dy()
 	window := newWindow(application, width, height, input)
@@ -178,8 +181,8 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray, format, inp
 	})
 
 	newItem4 := fyne.NewMenuItem("Negative", func() {
-		negativeImage := operations.Negative(negativeImage, operations.LutGray(), width, height)
-		NegativeButton(application, negativeImage, format, "Negative")
+		negativeImage := operations.Negative(negativeImage, lutGray, width, height)
+		NegativeButton(application, negativeImage, lutGray, format, "Negative")
 	})
 
 	newItem5 := fyne.NewMenuItem("Convert to RGB", func() {
@@ -255,20 +258,3 @@ func scaleGray(img image.Image, width, height int) *image.Gray {
 	}
 	return img2
 }
-
-/*func RGB(img image.Gray, width, height int) *image.RGBA {
-	img2 := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
-	for i := 0; i < width; i++ {
-		for j := 0; j < height; j++ {
-			r, g, b, a := img.At(i, j).RGBA()
-			r, g, b = r>>8, g>>8, b>>8
-			rNuevo := float64(r) / 0.299
-			gNuevo := float64(g) / 0.587
-			bNuevo := float64(b) / 0.114
-			fmt.Println(uint(rNuevo), uint(gNuevo), uint(bNuevo))
-			rgbColor := color.RGBA{uint8(uint(rNuevo) << 8), uint8(uint(gNuevo) << 8), uint8(uint(bNuevo) << 8), uint8(a)}
-			img2.Set(i, j, rgbColor)
-		}
-	}
-	return img2
-}*/
