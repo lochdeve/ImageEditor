@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"image"
 	"image/color"
 	"strconv"
@@ -26,25 +25,26 @@ import (
 type MyWidget struct {
 	widget.Icon
 	image image.Image
+	text  *canvas.Text
 }
 
-func new(image1 image.Image) *MyWidget {
-	m := &MyWidget{image: image1}
+func new(image1 image.Image, text1 *canvas.Text) *MyWidget {
+	m := &MyWidget{image: image1, text: text1}
 	m.ExtendBaseWidget(m)
 	return m
 }
 
 func (t *MyWidget) Tapped(_ *fyne.PointEvent) {
-	fmt.Println("I have been tapped")
+	//fmt.Println("I have been tapped")
 }
 
 func (w *MyWidget) FocusGained() {
-	fmt.Println("FocusGained")
+	//fmt.Println("FocusGained")
 }
 
 // FocusLost is a hook called by the focus handling logic after this object lost the focus.
 func (w *MyWidget) FocusLost() {
-	fmt.Println("Lost focus")
+	//fmt.Println("Lost focus")
 }
 
 // TypedRune is a hook called by the input handling logic on text input events if this object is focused.
@@ -59,20 +59,23 @@ func (w *MyWidget) TypedKey(_ *fyne.KeyEvent) {
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *MyWidget) MouseIn(*desktop.MouseEvent) {
-	fmt.Println("Inside")
+	//	fmt.Println("Inside")
 }
 
 // MouseMoved is a hook that is called if the mouse pointer moved over the element.
 func (w *MyWidget) MouseMoved(hola *desktop.MouseEvent) {
-	fmt.Println("It moves")
-	fmt.Println()
-	fmt.Println(w.image.At(int(hola.AbsolutePosition.X), int(hola.AbsolutePosition.Y)).RGBA())
-
+	//fmt.Println("It moves")
+	r, g, b, _ := w.image.At(int(hola.AbsolutePosition.X), int(hola.AbsolutePosition.Y)).RGBA()
+	r, g, b = r>>8, g>>8, b>>8
+	textaux := "R:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) + " B:" + strconv.Itoa(int(b))
+	w.text.Text = textaux
+	w.text.Refresh()
+	//fmt.Println(textaux)
 }
 
 // MouseOut is a hook that is called if the mouse pointer leaves the element.
 func (w *MyWidget) MouseOut() {
-	fmt.Println("get out")
+	//fmt.Println("get out")
 }
 
 func (mouse *MyWidget) CreateRenderer() fyne.WidgetRenderer {
@@ -129,10 +132,10 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 
 					windowName := strings.Split(fileName, "/")
 					imageWindow := newWindow(application, colorImage.Bounds().Dx(), colorImage.Bounds().Dy(), windowName[len(windowName)-1])
-					image := canvas.NewImageFromFile(fileName)
+					canvasImage := canvas.NewImageFromImage(colorImage)
 					text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
 					canvasText := canvas.NewText(text, color.Opaque)
-					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, new(grayImage)))
+					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, canvasImage, new(colorImage, canvasText)))
 					//imageWindow.SetContent(new())
 					newItem := fyne.NewMenuItem("Image Information", func() {
 						dialog.ShowInformation("Information", informationTape, imageWindow)
