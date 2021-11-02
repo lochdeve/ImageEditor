@@ -75,8 +75,8 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					canvasImage := canvas.NewImageFromImage(colorImage)
 					text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
 					canvasText := canvas.NewText(text, color.Opaque)
-					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, canvasImage, mouse.New(colorImage, canvasText)))
-					//imageWindow.SetContent(new())
+					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, canvasImage, mouse.New(colorImage, canvasText, text)))
+
 					newItem := fyne.NewMenuItem("Image Information", func() {
 						dialog.ShowInformation("Information", informationTape, imageWindow)
 					})
@@ -112,25 +112,15 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 	image := canvas.NewImageFromImage(grayImage)
 	text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
 	canvasText := canvas.NewText(text, color.Opaque)
-	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(grayImage, canvasText)))
+	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(grayImage, canvasText, text)))
+
+	_, values, numbersOfPixel, _, _, _, _ := calculate(grayImage, width, height, format)
 
 	newItem := fyne.NewMenuItem("Image Information", func() {
 		dialog.ShowInformation("Information", information, window)
 	})
 
-	newItem2 := fyne.NewMenuItem("Histogram", func() {
-		numbersofpixel, values := operations.ColorsValues(grayImage)
-		histogram.Plote(histogram.NumbersOfPixel(numbersofpixel), values)
-		histogramImage, _, _ := loadandsave.LoadImage("hist.png")
-		width := histogramImage.Bounds().Dx()
-		height := histogramImage.Bounds().Dy()
-		windowImage := newWindow(application, width, height, "histogram")
-		text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
-		canvasText := canvas.NewText(text, color.Opaque)
-		image := canvas.NewImageFromImage(histogramImage)
-		windowImage.SetContent(container.NewBorder(nil, canvasText, nil, nil, image))
-		windowImage.Show()
-	})
+	newItem2 := histogramButton(application, window, values, numbersOfPixel)
 
 	newItem3 := fyne.NewMenuItem("Cumulative histogram", func() {
 		// plote(lutGray(), cumulativeHistogram(values))
@@ -141,19 +131,15 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 		NegativeButton(application, negativeImage, lutGray, format, "Negative")
 	})
 
-	newItem5 := fyne.NewMenuItem("Convert to RGB", func() {
-		// loadandsave.SaveImage("RGB.png", colorImage)
-	})
-
-	newItem6 := fyne.NewMenuItem("Quit", func() {
+	newItem5 := fyne.NewMenuItem("Quit", func() {
 		window.Close()
 	})
 
 	newItemSeparator := fyne.NewMenuItemSeparator()
 
-	menuItem := fyne.NewMenu("File", saveItem(application, grayImage), newItemSeparator, newItem6)
+	menuItem := fyne.NewMenu("File", saveItem(application, grayImage), newItemSeparator, newItem5)
 	menuItem2 := fyne.NewMenu("Image Information", newItem)
-	menuItem3 := fyne.NewMenu("Operations", newItem2, newItemSeparator, newItem3, newItemSeparator, newItem4, newItemSeparator, newItem5)
+	menuItem3 := fyne.NewMenu("Operations", newItem2, newItemSeparator, newItem3, newItemSeparator, newItem4)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -168,9 +154,9 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 	image := canvas.NewImageFromImage(negativeImage)
 	text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
 	canvasText := canvas.NewText(text, color.Opaque)
-	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(negativeImage, canvasText)))
+	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(negativeImage, canvasText, text)))
 
-	_, _, _, min, max, brightness, contrast := calculate(negativeImage, width, height, format)
+	_, values, numbersOfPixel, min, max, brightness, contrast := calculate(negativeImage, width, height, format)
 
 	informationTape := information(format, width, height, min, max, brightness, contrast)
 
@@ -178,9 +164,7 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 		dialog.ShowInformation("Information", informationTape, window)
 	})
 
-	newItem2 := fyne.NewMenuItem("Histogram", func() {
-		// histogram.Plote(numbersOfPixel, values)
-	})
+	newItem2 := histogramButton(application, window, values, numbersOfPixel)
 
 	newItem3 := fyne.NewMenuItem("Cumulative histogram", func() {
 		// plote(lutGray(), cumulativeHistogram(values))
@@ -191,23 +175,40 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 		NegativeButton(application, negativeImage, lutGray, format, "Negative")
 	})
 
-	newItem5 := fyne.NewMenuItem("Convert to RGB", func() {
-		// loadandsave.SaveImage("RGB.png", colorImage)
-	})
-
-	newItem6 := fyne.NewMenuItem("Quit", func() {
+	newItem5 := fyne.NewMenuItem("Quit", func() {
 		window.Close()
 	})
 
 	newItemSeparator := fyne.NewMenuItemSeparator()
 
-	menuItem := fyne.NewMenu("File", saveItem(application, negativeImage), newItemSeparator, newItem6)
+	menuItem := fyne.NewMenu("File", saveItem(application, negativeImage), newItemSeparator, newItem5)
 	menuItem2 := fyne.NewMenu("Image Information", newItem)
-	menuItem3 := fyne.NewMenu("Operations", newItem2, newItemSeparator, newItem3, newItemSeparator, newItem4, newItemSeparator, newItem5)
+	menuItem3 := fyne.NewMenu("Operations", newItem2, newItemSeparator, newItem3, newItemSeparator, newItem4)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
 	window.Close()
+}
+
+func histogramButton(application fyne.App, window fyne.Window,
+	values plotter.Values, numbersOfPixel map[int]int) *fyne.MenuItem {
+	newItem := fyne.NewMenuItem("Histogram", func() {
+		histogram.Plote(numbersOfPixel, values)
+		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
+		if err != nil {
+			dialog.ShowError(err, window)
+		} else {
+			width := histogramImage.Bounds().Dx()
+			height := histogramImage.Bounds().Dy()
+			windowImage := newWindow(application, width, height, "Histogram")
+			text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
+			canvasText := canvas.NewText(text, color.Opaque)
+			image := canvas.NewImageFromImage(histogramImage)
+			windowImage.SetContent(container.NewBorder(nil, canvasText, nil, nil, image))
+			windowImage.Show()
+		}
+	})
+	return newItem
 }
 
 func saveItem(application fyne.App, image image.Image) *fyne.MenuItem {

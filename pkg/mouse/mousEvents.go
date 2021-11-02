@@ -14,10 +14,11 @@ type MouseEvents struct {
 	widget.Icon
 	image image.Image
 	text  *canvas.Text
+	size  string
 }
 
-func New(image1 image.Image, text1 *canvas.Text) *MouseEvents {
-	m := &MouseEvents{image: image1, text: text1}
+func New(image1 image.Image, text1 *canvas.Text, text2 string) *MouseEvents {
+	m := &MouseEvents{image: image1, text: text1, size: text2}
 	m.ExtendBaseWidget(m)
 	return m
 }
@@ -51,10 +52,12 @@ func (w *MouseEvents) MouseIn(*desktop.MouseEvent) {
 }
 
 // MouseMoved is a hook that is called if the mouse pointer moved over the element.
-func (w *MouseEvents) MouseMoved(hola *desktop.MouseEvent) {
-	r, g, b, _ := w.image.At(int(hola.AbsolutePosition.X), int(hola.AbsolutePosition.Y)).RGBA()
+func (w *MouseEvents) MouseMoved(mousePosition *desktop.MouseEvent) {
+	r, g, b, _ := w.image.At(int(mousePosition.AbsolutePosition.X),
+		int(mousePosition.AbsolutePosition.Y)).RGBA()
 	r, g, b = r>>8, g>>8, b>>8
-	textaux := "R:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) + " B:" + strconv.Itoa(int(b))
+	textaux := w.size + " R:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) +
+		" B:" + strconv.Itoa(int(b))
 	w.text.Text = textaux
 	w.text.Refresh()
 }
