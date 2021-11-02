@@ -1,6 +1,7 @@
 package operations
 
 import (
+	"errors"
 	"image"
 	"image/color"
 	"math"
@@ -74,4 +75,71 @@ func Contrast(numbersOfPixels map[int]int, average, size int) int {
 	contrast := int(math.Sqrt(float64(calculations) / float64(size)))
 	// println(contrast)
 	return contrast
+}
+
+func AdjustBrightnessAndContrast(newBrightness int, newContrast int, numbersOfPixels map[int]int, images *image.Gray, size int) *image.Gray {
+	brightness := Brightness(numbersOfPixels, size)
+	contrast := Contrast(numbersOfPixels, brightness, size)
+	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{images.Bounds().Dx(), images.Bounds().Dy()}})
+
+	A := newContrast / contrast
+	B := newBrightness - (A * brightness)
+	newValue := 0
+	for i := 0; i < images.Bounds().Dx(); i++ {
+		for j := 0; j < images.Bounds().Dy(); j++ {
+			newValue = int(math.Abs(float64((A * int(images.GrayAt(i, j).Y)) + B)))
+			newColor := color.Gray{uint8(newValue)}
+			img2.Set(i, j, newColor)
+		}
+	}
+	return img2
+}
+
+func ScaleGray(img image.Image, width, height int) *image.Gray {
+	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			r, g, b, _ := img.At(i, j).RGBA()
+			r, g, b = r>>8, g>>8, b>>8
+			y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
+			grayColor := color.Gray{uint8(y)}
+			img2.Set(i, j, grayColor)
+		}
+	}
+	return img2
+}
+
+func ImageDifference(image1 *image.Gray, image2 image.Image) (*image.Gray, error) {
+	differenceImage := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{image1.Bounds().Dx(), image1.Bounds().Dy()}})
+	if image1.Bounds().Dx() != image2.Bounds().Dx() || image1.Bounds().Dy() != image2.Bounds().Dy() {
+		return differenceImage, errors.New("the image must contain extension")
+	}
+
+	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{image2.Bounds().Dx(), image2.Bounds().Dy()}})
+
+	for i := 0; i < image1.Bounds().Dx(); i++ {
+		for j := 0; j < image1.Bounds().Dy(); j++ {
+			var grayColor color.Gray
+			r, g, b, _ := image2.At(i, j).RGBA()
+			if r > 255 || g > 255 || b > 255 {
+				r, g, b = r>>8, g>>8, b>>8
+				y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
+				grayColor = color.Gray{uint8(y)}
+				img2.Set(i, j, grayColor)
+			} else {
+				if r == 0 && g == 0 && b == 0 {
+					grayColor = color.Gray{uint8(0)}
+					img2.Set(i, j, grayColor)
+				} else {
+					img2.Set(i, j, image2.At(i, j))
+				}
+			}
+			newValue := int(math.Abs(float64(uint32(image1.GrayAt(i, j).Y) - uint32(img2.GrayAt(i, j).Y))))
+
+			newColor := color.Gray{uint8(newValue)}
+
+			differenceImage.Set(i, j, newColor)
+		}
+	}
+	return differenceImage, nil
 }

@@ -15,6 +15,7 @@ import (
 	"fyne.io/fyne/v2/app"
 	"fyne.io/fyne/v2/canvas"
 	"fyne.io/fyne/v2/container"
+	"fyne.io/fyne/v2/data/binding"
 	"fyne.io/fyne/v2/dialog"
 	"fyne.io/fyne/v2/storage"
 	"fyne.io/fyne/v2/widget"
@@ -32,17 +33,17 @@ func interfaz() {
 	// mainWindow.Resize(fyne.NewSize(500, 500))
 	window := screenshot.GetDisplayBounds(0)
 	mainWindow.Resize(fyne.NewSize(float32(window.Bounds().Dx()), float32(window.Bounds().Dy())))
-	fileItem := buttonOpen(application, mainWindow)
+	openFileItem := buttonOpen(application, mainWindow)
 
-	newItem := fyne.NewMenuItem("Quit", func() {
+	quitItem := fyne.NewMenuItem("Quit", func() {
 		mainWindow.Close()
 	})
 
 	newItemSeparator := fyne.NewMenuItemSeparator()
 
-	menuItem := fyne.NewMenu("File", fileItem, newItemSeparator, newItem)
-	menuItem2 := fyne.NewMenu("Options")
-	menu := fyne.NewMainMenu(menuItem, menuItem2)
+	fileItem := fyne.NewMenu("File", openFileItem, newItemSeparator, quitItem)
+	optionItem := fyne.NewMenu("Options")
+	menu := fyne.NewMainMenu(fileItem, optionItem)
 	mainWindow.SetMainMenu(menu)
 	mainWindow.ShowAndRun()
 }
@@ -65,7 +66,7 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 				} else {
 					width := colorImage.Bounds().Dx()
 					height := colorImage.Bounds().Dy()
-					grayImage := scaleGray(colorImage, width, height)
+					grayImage := operations.ScaleGray(colorImage, width, height)
 					_, _, _, min, max, brightness, contrast := calculate(grayImage, width, height, format)
 					informationTape := information(format, width, height, min, max, brightness, contrast)
 					lutGray := operations.LutGray()
@@ -77,22 +78,24 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					canvasText := canvas.NewText(text, color.Opaque)
 					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, canvasImage, mouse.New(colorImage, canvasText, text)))
 
-					newItem := fyne.NewMenuItem("Image Information", func() {
+					imageInformationItem := fyne.NewMenuItem("Image Information", func() {
 						dialog.ShowInformation("Information", informationTape, imageWindow)
 					})
 
-					newItem2 := fyne.NewMenuItem("Scale gray", func() {
+					scaleGrayItem := fyne.NewMenuItem("Scale gray", func() {
 						GrayButton(application, grayImage, lutGray, windowName[len(windowName)-1], format, informationTape)
 					})
 
-					newItem3 := fyne.NewMenuItem("Quit", func() {
+					quitItem := fyne.NewMenuItem("Quit", func() {
 						imageWindow.Close()
 					})
 
-					newItemSeparator := fyne.NewMenuItemSeparator()
+					separatorItem := fyne.NewMenuItemSeparator()
+					saveItem := fyne.NewMenu("File", saveItem(application, grayImage), separatorItem, quitItem)
 
-					menuItem := fyne.NewMenu("Operations", newItem, newItemSeparator, newItem2, newItemSeparator, newItem3)
-					menu := fyne.NewMainMenu(menuItem)
+					imageInformationMenu := fyne.NewMenu("ImageInformation", imageInformationItem)
+					operationItem := fyne.NewMenu("Operations", scaleGrayItem, separatorItem, quitItem)
+					menu := fyne.NewMainMenu(saveItem, imageInformationMenu, operationItem)
 					imageWindow.SetMainMenu(menu)
 					imageWindow.Show()
 				}
@@ -116,30 +119,79 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 
 	_, values, numbersOfPixel, _, _, _, _ := calculate(grayImage, width, height, format)
 
-	newItem := fyne.NewMenuItem("Image Information", func() {
+	imageInformationItem := fyne.NewMenuItem("Image Information", func() {
 		dialog.ShowInformation("Information", information, window)
 	})
 
-	newItem2 := histogramButton(application, window, values, numbersOfPixel)
+	histogramItem := histogramButton(application, window, values, numbersOfPixel)
 
-	newItem3 := fyne.NewMenuItem("Cumulative histogram", func() {
+	cumulativeHistogramItem := fyne.NewMenuItem("Cumulative histogram", func() {
 		// plote(lutGray(), cumulativeHistogram(values))
 	})
 
-	newItem4 := fyne.NewMenuItem("Negative", func() {
+	negativeItem := fyne.NewMenuItem("Negative", func() {
 		negativeImage := operations.Negative(grayImage, lutGray, width, height)
 		NegativeButton(application, negativeImage, lutGray, format, "Negative")
 	})
 
-	newItem5 := fyne.NewMenuItem("Quit", func() {
+	quitItem := fyne.NewMenuItem("Quit", func() {
 		window.Close()
 	})
 
-	newItemSeparator := fyne.NewMenuItemSeparator()
+	brightnessAndContrastItem := fyne.NewMenuItem("Brightness and Contrast", func() {
+		numbersofpixel, values := operations.ColorsValues(grayImage)
+		histogram.Plote(histogram.NumbersOfPixel(numbersofpixel), values)
+		newWindows := newWindow(application, 500, 500, "Brightness and Contrast")
+		data := binding.NewFloat()
+		data.Set(float64(operations.Brightness(histogram.NumbersOfPixel(numbersofpixel), height*width)))
+		slide := widget.NewSliderWithData(0, 255, data)
+		formatted := binding.FloatToStringWithFormat(data, "Float value: %0.2f")
+		label := widget.NewLabelWithData(formatted)
 
-	menuItem := fyne.NewMenu("File", saveItem(application, grayImage), newItemSeparator, newItem5)
-	menuItem2 := fyne.NewMenu("Image Information", newItem)
-	menuItem3 := fyne.NewMenu("Operations", newItem2, newItemSeparator, newItem3, newItemSeparator, newItem4)
+		data2 := binding.NewFloat()
+		data2.Set(float64(operations.Contrast(histogram.NumbersOfPixel(numbersofpixel), operations.Brightness(histogram.NumbersOfPixel(numbersofpixel), height*width), height*width)))
+		slide2 := widget.NewSliderWithData(0, 127, data2)
+		formatted2 := binding.FloatToStringWithFormat(data2, "Float value: %0.2f")
+		label2 := widget.NewLabelWithData(formatted2)
+
+		content := widget.NewButton("Calculate", func() {
+			width := grayImage.Bounds().Dx()
+			height := grayImage.Bounds().Dy()
+			window := newWindow(application, width, height, input)
+			text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
+			canvasText := canvas.NewText(text, color.Opaque)
+			bright, _ := data.Get()
+			conts, _ := data2.Get()
+			newImage := operations.AdjustBrightnessAndContrast(int(bright), int(conts), histogram.NumbersOfPixel(numbersofpixel), grayImage, width*height)
+			image := canvas.NewImageFromImage(newImage)
+			window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(newImage, canvasText, text)))
+			window.Show()
+		})
+
+		brightness := canvas.NewText("Brightness", color.White)
+		brightness.TextStyle = fyne.TextStyle{Bold: true}
+		contrast := canvas.NewText("Contrast", color.White)
+		contrast.TextStyle = fyne.TextStyle{Bold: true}
+		menuAndImageContainer := container.NewVBox(brightness, label, slide, contrast, label2, slide2, content)
+
+		newWindows.SetContent(menuAndImageContainer)
+
+		//	newWindows.SetContent(container.NewBorder(nil, nil, nil, nil, label, slide, label2, slide2))
+		//newWindows.SetContent(container.NewBorder(nil, nil, nil, nil, label2, slide2))
+		newWindows.Show()
+	})
+
+	imageDifferenceItem := differenceDialogItem(application, width, height, grayImage)
+
+	changeMap := fyne.NewMenuItem("Image difference", func() {
+		differenceDialogItem(application, width, height, grayImage)
+	})
+
+	separatorItem := fyne.NewMenuItemSeparator()
+
+	menuItem := fyne.NewMenu("File", saveItem(application, grayImage), separatorItem, quitItem)
+	menuItem2 := fyne.NewMenu("Image Information", imageInformationItem)
+	menuItem3 := fyne.NewMenu("Operations", histogramItem, separatorItem, cumulativeHistogramItem, separatorItem, negativeItem, separatorItem, brightnessAndContrastItem, separatorItem, imageDifferenceItem, separatorItem, changeMap)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -160,17 +212,17 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 
 	informationTape := information(format, width, height, min, max, brightness, contrast)
 
-	newItem := fyne.NewMenuItem("Image Information", func() {
+	informationItem := fyne.NewMenuItem("Image Information", func() {
 		dialog.ShowInformation("Information", informationTape, window)
 	})
 
-	newItem2 := histogramButton(application, window, values, numbersOfPixel)
+	histogramItem := histogramButton(application, window, values, numbersOfPixel)
 
-	newItem3 := fyne.NewMenuItem("Cumulative histogram", func() {
+	cumulativeHistogramItem := fyne.NewMenuItem("Cumulative histogram", func() {
 		// plote(lutGray(), cumulativeHistogram(values))
 	})
 
-	newItem4 := fyne.NewMenuItem("Negative", func() {
+	negativeImageItem := fyne.NewMenuItem("Negative", func() {
 		negativeImage := operations.Negative(negativeImage, lutGray, width, height)
 		NegativeButton(application, negativeImage, lutGray, format, "Negative")
 	})
@@ -182,8 +234,8 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 	newItemSeparator := fyne.NewMenuItemSeparator()
 
 	menuItem := fyne.NewMenu("File", saveItem(application, negativeImage), newItemSeparator, newItem5)
-	menuItem2 := fyne.NewMenu("Image Information", newItem)
-	menuItem3 := fyne.NewMenu("Operations", newItem2, newItemSeparator, newItem3, newItemSeparator, newItem4)
+	menuItem2 := fyne.NewMenu("Image Information", informationItem)
+	menuItem3 := fyne.NewMenu("Operations", histogramItem, newItemSeparator, cumulativeHistogramItem, newItemSeparator, negativeImageItem)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -192,7 +244,7 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 
 func histogramButton(application fyne.App, window fyne.Window,
 	values plotter.Values, numbersOfPixel map[int]int) *fyne.MenuItem {
-	newItem := fyne.NewMenuItem("Histogram", func() {
+	histogramItem := fyne.NewMenuItem("Histogram", func() {
 		histogram.Plote(numbersOfPixel, values)
 		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
 		if err != nil {
@@ -208,11 +260,11 @@ func histogramButton(application fyne.App, window fyne.Window,
 			windowImage.Show()
 		}
 	})
-	return newItem
+	return histogramItem
 }
 
 func saveItem(application fyne.App, image image.Image) *fyne.MenuItem {
-	newItem := fyne.NewMenuItem("Save Image", func() {
+	saveImageItem := fyne.NewMenuItem("Save Image", func() {
 		fileWindow := application.NewWindow("SaveFile")
 		fileWindow.Resize(fyne.NewSize(500, 500))
 		input := widget.NewEntry()
@@ -228,7 +280,7 @@ func saveItem(application fyne.App, image image.Image) *fyne.MenuItem {
 		fileWindow.SetContent(content)
 		fileWindow.Show()
 	})
-	return newItem
+	return saveImageItem
 }
 
 func calculate(image *image.Gray, width, height int, format string) ([]uint64,
@@ -252,16 +304,34 @@ func information(format string, width, height, min, max, brightness, contrast in
 
 }
 
-func scaleGray(img image.Image, width, height int) *image.Gray {
-	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
-	for i := 0; i < width; i++ {
-		for j := 0; j < height; j++ {
-			r, g, b, _ := img.At(i, j).RGBA()
-			r, g, b = r>>8, g>>8, b>>8
-			y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
-			grayColor := color.Gray{uint8(y)}
-			img2.Set(i, j, grayColor)
-		}
-	}
-	return img2
+func differenceDialogItem(application fyne.App, width, height int, grayImage *image.Gray) *fyne.MenuItem {
+	dialogItem := fyne.NewMenuItem("Image difference", func() {
+		windowImage := newWindow(application, width, height, "difference")
+		dialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+
+			if reader != nil {
+				fileName := reader.URI().String()[7:]
+				image, _, err := loadandsave.LoadImage(fileName)
+				if err != nil {
+					dialog.ShowError(err, windowImage)
+				}
+				difference, err := operations.ImageDifference(grayImage, image)
+				if err != nil {
+					dialog.ShowError(err, windowImage)
+				}
+				canvasImage := canvas.NewImageFromImage(difference)
+				windowImage.SetContent(canvasImage)
+			}
+		}, windowImage)
+
+		item := buttonOpen(application, windowImage)
+		menuItem := fyne.NewMenu("Operations", item)
+		menu := fyne.NewMainMenu(menuItem)
+		windowImage.SetMainMenu(menu)
+		windowImage.Show()
+		dialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".jpeg"}))
+
+		dialog.Show()
+	})
+	return dialogItem
 }
