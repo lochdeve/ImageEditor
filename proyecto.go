@@ -118,7 +118,7 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image,
 		mouse.New(grayImage, canvasText, text)))
 
-	_, values, numbersOfPixel, _, _, _, brightness, contrast :=
+	colors, values, numbersOfPixel, _, _, _, brightness, contrast :=
 		calculate(grayImage, width, height, format)
 
 	imageInformationItem := fyne.NewMenuItem("Image Information", func() {
@@ -128,7 +128,20 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 	histogramItem := histogramButton(application, window, values, numbersOfPixel)
 
 	cumulativeHistogramItem := fyne.NewMenuItem("Cumulative histogram", func() {
-		// plote(lutGray(), cumulativeHistogram(values))
+		histogram.Plote(numbersOfPixel, values, true)
+		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
+		if err != nil {
+			dialog.ShowError(err, window)
+		} else {
+			width := histogramImage.Bounds().Dx()
+			height := histogramImage.Bounds().Dy()
+			windowImage := newWindow(application, width, height, "Histogram")
+			text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
+			canvasText := canvas.NewText(text, color.Opaque)
+			image := canvas.NewImageFromImage(histogramImage)
+			windowImage.SetContent(container.NewBorder(nil, canvasText, nil, nil, image))
+			windowImage.Show()
+		}
 	})
 
 	negativeItem := fyne.NewMenuItem("Negative", func() {
@@ -219,7 +232,20 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 	histogramItem := histogramButton(application, window, values, numbersOfPixel)
 
 	cumulativeHistogramItem := fyne.NewMenuItem("Cumulative histogram", func() {
-		// plote(lutGray(), cumulativeHistogram(values))
+		histogram.Plote(numbersOfPixel, values, true)
+		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
+		if err != nil {
+			dialog.ShowError(err, window)
+		} else {
+			width := histogramImage.Bounds().Dx()
+			height := histogramImage.Bounds().Dy()
+			windowImage := newWindow(application, width, height, "Histogram")
+			text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
+			canvasText := canvas.NewText(text, color.Opaque)
+			image := canvas.NewImageFromImage(histogramImage)
+			windowImage.SetContent(container.NewBorder(nil, canvasText, nil, nil, image))
+			windowImage.Show()
+		}
 	})
 
 	negativeImageItem := fyne.NewMenuItem("Negative", func() {
@@ -245,7 +271,7 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 func histogramButton(application fyne.App, window fyne.Window,
 	values plotter.Values, numbersOfPixel map[int]int) *fyne.MenuItem {
 	histogramItem := fyne.NewMenuItem("Histogram", func() {
-		histogram.Plote(numbersOfPixel, values)
+		histogram.Plote(numbersOfPixel, values, false)
 		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
 		if err != nil {
 			dialog.ShowError(err, window)
