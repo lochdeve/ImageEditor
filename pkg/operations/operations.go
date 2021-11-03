@@ -89,7 +89,7 @@ func AdjustBrightnessAndContrast(newBrightness int, newContrast int,
 	newValue := 0
 	for i := 0; i < images.Bounds().Dx(); i++ {
 		for j := 0; j < images.Bounds().Dy(); j++ {
-			newValue = int(math.Abs(float64((A * int(images.GrayAt(i, j).Y)) + B)))
+			newValue = A*int(images.GrayAt(i, j).Y) + B
 			newColor := color.Gray{uint8(newValue)}
 			img2.Set(i, j, newColor)
 		}
