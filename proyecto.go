@@ -67,8 +67,8 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					width := colorImage.Bounds().Dx()
 					height := colorImage.Bounds().Dy()
 					grayImage := operations.ScaleGray(colorImage, width, height)
-					_, _, _, min, max, brightness, contrast := calculate(grayImage, width, height, format)
-					informationTape := information(format, width, height, min, max, brightness, contrast)
+					_, _, _, entropy, min, max, brightness, contrast := calculate(grayImage, width, height, format)
+					informationTape := information(format, width, height, min, max, brightness, contrast, entropy)
 					lutGray := operations.LutGray()
 
 					windowName := strings.Split(fileName, "/")
@@ -108,19 +108,21 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 }
 
 func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int,
-	input, format, information string) {
+	input, format, informationText string) {
 	width := grayImage.Bounds().Dx()
 	height := grayImage.Bounds().Dy()
 	window := newWindow(application, width, height, input)
 	image := canvas.NewImageFromImage(grayImage)
 	text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
 	canvasText := canvas.NewText(text, color.Opaque)
-	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(grayImage, canvasText, text)))
+	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image,
+		mouse.New(grayImage, canvasText, text)))
 
-	_, values, numbersOfPixel, _, _, _, _ := calculate(grayImage, width, height, format)
+	_, values, numbersOfPixel, _, _, _, brightness, contrast :=
+		calculate(grayImage, width, height, format)
 
 	imageInformationItem := fyne.NewMenuItem("Image Information", func() {
-		dialog.ShowInformation("Information", information, window)
+		dialog.ShowInformation("Information", informationText, window)
 	})
 
 	histogramItem := histogramButton(application, window, values, numbersOfPixel)
@@ -139,17 +141,15 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 	})
 
 	brightnessAndContrastItem := fyne.NewMenuItem("Brightness and Contrast", func() {
-		numbersofpixel, values := operations.ColorsValues(grayImage)
-		histogram.Plote(histogram.NumbersOfPixel(numbersofpixel), values)
 		newWindows := newWindow(application, 500, 500, "Brightness and Contrast")
 		data := binding.NewFloat()
-		data.Set(float64(operations.Brightness(histogram.NumbersOfPixel(numbersofpixel), height*width)))
+		data.Set(float64(brightness))
 		slide := widget.NewSliderWithData(0, 255, data)
 		formatted := binding.FloatToStringWithFormat(data, "Float value: %0.2f")
 		label := widget.NewLabelWithData(formatted)
 
 		data2 := binding.NewFloat()
-		data2.Set(float64(operations.Contrast(histogram.NumbersOfPixel(numbersofpixel), operations.Brightness(histogram.NumbersOfPixel(numbersofpixel), height*width), height*width)))
+		data2.Set(float64(contrast))
 		slide2 := widget.NewSliderWithData(0, 127, data2)
 		formatted2 := binding.FloatToStringWithFormat(data2, "Float value: %0.2f")
 		label2 := widget.NewLabelWithData(formatted2)
@@ -157,33 +157,32 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 		content := widget.NewButton("Calculate", func() {
 			width := grayImage.Bounds().Dx()
 			height := grayImage.Bounds().Dy()
-			window := newWindow(application, width, height, input)
-			text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
-			canvasText := canvas.NewText(text, color.Opaque)
 			bright, _ := data.Get()
 			conts, _ := data2.Get()
-			newImage := operations.AdjustBrightnessAndContrast(int(bright), int(conts), histogram.NumbersOfPixel(numbersofpixel), grayImage, width*height)
-			image := canvas.NewImageFromImage(newImage)
-			window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(newImage, canvasText, text)))
-			window.Show()
+			newImage := operations.AdjustBrightnessAndContrast(int(bright), int(conts),
+				numbersOfPixel, grayImage, width*height)
+			_, _, _, entropy, newMin, newMax, newBrightness, newContrast :=
+				calculate(newImage, width, height, format)
+			newInformationText := information(format, width, height, newMin, newMax,
+				newBrightness, newContrast, entropy)
+			GrayButton(application, newImage, operations.LutGray(), "Modified Image",
+				format, newInformationText)
 		})
 
-		brightness := canvas.NewText("Brightness", color.White)
-		brightness.TextStyle = fyne.TextStyle{Bold: true}
-		contrast := canvas.NewText("Contrast", color.White)
-		contrast.TextStyle = fyne.TextStyle{Bold: true}
-		menuAndImageContainer := container.NewVBox(brightness, label, slide, contrast, label2, slide2, content)
+		brightnessText := canvas.NewText("Brightness", color.White)
+		brightnessText.TextStyle = fyne.TextStyle{Bold: true}
+		contrastText := canvas.NewText("Contrast", color.White)
+		contrastText.TextStyle = fyne.TextStyle{Bold: true}
+		menuAndImageContainer := container.NewVBox(brightnessText, label, slide,
+			contrastText, label2, slide2, content)
 
 		newWindows.SetContent(menuAndImageContainer)
-
-		//	newWindows.SetContent(container.NewBorder(nil, nil, nil, nil, label, slide, label2, slide2))
-		//newWindows.SetContent(container.NewBorder(nil, nil, nil, nil, label2, slide2))
 		newWindows.Show()
 	})
 
 	imageDifferenceItem := differenceDialogItem(application, width, height, grayImage)
 
-	changeMap := fyne.NewMenuItem("Image difference", func() {
+	changeMap := fyne.NewMenuItem("Change Map", func() {
 		differenceDialogItem(application, width, height, grayImage)
 	})
 
@@ -208,9 +207,10 @@ func NegativeButton(application fyne.App, negativeImage *image.Gray,
 	canvasText := canvas.NewText(text, color.Opaque)
 	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image, mouse.New(negativeImage, canvasText, text)))
 
-	_, values, numbersOfPixel, min, max, brightness, contrast := calculate(negativeImage, width, height, format)
+	_, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
+		calculate(negativeImage, width, height, format)
 
-	informationTape := information(format, width, height, min, max, brightness, contrast)
+	informationTape := information(format, width, height, min, max, brightness, contrast, entropy)
 
 	informationItem := fyne.NewMenuItem("Image Information", func() {
 		dialog.ShowInformation("Information", informationTape, window)
@@ -284,22 +284,25 @@ func saveItem(application fyne.App, image image.Image) *fyne.MenuItem {
 }
 
 func calculate(image *image.Gray, width, height int, format string) ([]uint64,
-	plotter.Values, map[int]int, int, int, int, int) {
+	plotter.Values, map[int]int, float64, int, int, int, int) {
 	colors, values := operations.ColorsValues(image)
 	numbersOfPixel := histogram.NumbersOfPixel(colors)
+	entropy := operations.Entropy(numbersOfPixel, width*height)
 	min, max := operations.ValueRange(numbersOfPixel)
 	brightness := operations.Brightness(numbersOfPixel, width*height)
 	contrast := operations.Contrast(numbersOfPixel, brightness, width*height)
-	return colors, values, numbersOfPixel, min, max, brightness,
+	return colors, values, numbersOfPixel, entropy, min, max, brightness,
 		contrast
 }
 
-func information(format string, width, height, min, max, brightness, contrast int) string {
+func information(format string, width, height, min, max, brightness, contrast int,
+	entropy float64) string {
 	information := "Format: " + format + "\nSize:\n - Width: " +
 		strconv.Itoa(width) + "\n - Height: " + strconv.Itoa(height) +
 		"\nScale Gray Range:\n - Min: " + strconv.Itoa(min) + "\n - Max: " +
-		strconv.Itoa(max) + "\nBrightness: " + strconv.Itoa(brightness) +
-		"\nContrast: " + strconv.Itoa(contrast)
+		strconv.Itoa(max) + "\nEntropy: " + strconv.Itoa(int(entropy)) +
+		"\nBrightness: " + strconv.Itoa(brightness) + "\nContrast: " +
+		strconv.Itoa(contrast)
 	return information
 
 }

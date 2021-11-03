@@ -2,6 +2,7 @@ package operations
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -77,7 +78,8 @@ func Contrast(numbersOfPixels map[int]int, average, size int) int {
 	return contrast
 }
 
-func AdjustBrightnessAndContrast(newBrightness int, newContrast int, numbersOfPixels map[int]int, images *image.Gray, size int) *image.Gray {
+func AdjustBrightnessAndContrast(newBrightness int, newContrast int,
+	numbersOfPixels map[int]int, images *image.Gray, size int) *image.Gray {
 	brightness := Brightness(numbersOfPixels, size)
 	contrast := Contrast(numbersOfPixels, brightness, size)
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{images.Bounds().Dx(), images.Bounds().Dy()}})
@@ -93,6 +95,19 @@ func AdjustBrightnessAndContrast(newBrightness int, newContrast int, numbersOfPi
 		}
 	}
 	return img2
+}
+
+func Entropy(numbersOfPixel map[int]int, size int) float64 {
+	var entropy float64
+	for i := 0; i < len(numbersOfPixel); i++ {
+		if numbersOfPixel[i] != 0 {
+			p := float64(float64(numbersOfPixel[i]) / float64(size))
+			entropy += float64(p * math.Log2(p))
+		}
+	}
+	entropy *= -1
+	fmt.Print(entropy)
+	return entropy
 }
 
 func ScaleGray(img image.Image, width, height int) *image.Gray {
