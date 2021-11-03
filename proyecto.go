@@ -94,7 +94,7 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					saveItem := fyne.NewMenu("File", saveItem(application, grayImage), separatorItem, quitItem)
 
 					imageInformationMenu := fyne.NewMenu("ImageInformation", imageInformationItem)
-					operationItem := fyne.NewMenu("Operations", scaleGrayItem, separatorItem, quitItem)
+					operationItem := fyne.NewMenu("Operations", scaleGrayItem)
 					menu := fyne.NewMainMenu(saveItem, imageInformationMenu, operationItem)
 					imageWindow.SetMainMenu(menu)
 					imageWindow.Show()
@@ -177,12 +177,18 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 		newWindows.SetContent(menuAndImageContainer)
 		newWindows.Show()
 	})
-
-	imageDifferenceItem := differenceDialogItem(application, width, height, grayImage)
+	imageDifferenceItem := differenceDialogItem(application, width, height, 0, grayImage)
 
 	changeMap := fyne.NewMenuItem("Change Map", func() {
-		differenceDialogItem(application, width, height, grayImage)
+		hola(application, window, grayImage, 1)
+		//differenceDialogItem(application, width, height, 1, grayImage)
 	})
+	/*
+		imageDifferenceItem := differenceDialogItem(application, width, height, grayImage)
+
+		changeMap := fyne.NewMenuItem("Change Map", func() {
+			differenceDialogItem(application, width, height, grayImage)
+		})*/
 
 	separatorItem := fyne.NewMenuItemSeparator()
 
@@ -303,6 +309,50 @@ func information(format string, width, height, min, max, brightness, contrast in
 
 }
 
+func differenceDialogItem(application fyne.App, width, height, opcion int, grayImage *image.Gray) *fyne.MenuItem {
+	dialogItem := fyne.NewMenuItem("Image difference", func() {
+		windowImage := newWindow(application, width, height, "difference")
+		hola(application, windowImage, grayImage, opcion)
+		item := buttonOpen(application, windowImage)
+		menuItem := fyne.NewMenu("Operations", item)
+		menu := fyne.NewMainMenu(menuItem)
+		windowImage.SetMainMenu(menu)
+		windowImage.Show()
+
+	})
+	return dialogItem
+}
+
+func hola(application fyne.App, windowImage fyne.Window, grayImage *image.Gray, opcion int) {
+	dialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+		if reader != nil {
+			fileName := reader.URI().String()[7:]
+			image, _, err := loadandsave.LoadImage(fileName)
+			if err != nil {
+				dialog.ShowError(err, windowImage)
+			}
+			difference, err := operations.ImageDifference(grayImage, image)
+			if err != nil {
+				dialog.ShowError(err, windowImage)
+			}
+
+			if opcion == 1 {
+				canvasImage := canvas.NewImageFromImage(image)
+				newWindow := newWindow(application, image.Bounds().Dx(), image.Bounds().Dy(), fileName)
+				newWindow.SetContent(canvasImage)
+				newWindow.Show()
+				GrayButton(application, difference, nil, "", "", "")
+			} else {
+				canvasImage := canvas.NewImageFromImage(difference)
+				windowImage.SetContent(canvasImage)
+			}
+		}
+	}, windowImage)
+	dialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".jpeg"}))
+	dialog.Show()
+}
+
+/*
 func differenceDialogItem(application fyne.App, width, height int, grayImage *image.Gray) *fyne.MenuItem {
 	dialogItem := fyne.NewMenuItem("Image difference", func() {
 		windowImage := newWindow(application, width, height, "difference")
@@ -320,6 +370,7 @@ func differenceDialogItem(application fyne.App, width, height int, grayImage *im
 				}
 				canvasImage := canvas.NewImageFromImage(difference)
 				windowImage.SetContent(canvasImage)
+				GrayButton(application, difference, nil, "", "", "")
 			}
 		}, windowImage)
 
@@ -333,4 +384,4 @@ func differenceDialogItem(application fyne.App, width, height int, grayImage *im
 		dialog.Show()
 	})
 	return dialogItem
-}
+}*/

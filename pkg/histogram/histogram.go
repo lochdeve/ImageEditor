@@ -3,6 +3,7 @@ package histogram
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	"github.com/wcharczuk/go-chart/v2"
 	"gonum.org/v1/plot/plotter"
@@ -35,19 +36,6 @@ func CumulativeHistogram(histogram map[int]int) map[int]int {
 
 func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 
-	/*p := plot.New()
-
-	p.Title.Text = "Histogram plot"
-
-	hist, err2 := plotter.NewHist(values, len(numbersOfPixel))
-	if err2 != nil {
-		panic(err2)
-	}
-	hist.Normalize(1)
-	p.Add(hist)
-	if err := p.Save(3*vg.Inch, 3*vg.Inch, ".tmp/hist2.png"); err != nil {
-		panic(err)
-	}*/
 	number := numbersOfPixel
 	if cumulative {
 		number = CumulativeHistogram(numbersOfPixel)
@@ -56,8 +44,16 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 	barr := make([]chart.Value, 0)
 	fmt.Println(len(values))
 	for i := 0; i < len(number); i++ {
-		value := chart.Value{
-			Value: float64(float64(number[i]) / float64(len(values))),
+		value := chart.Value{}
+		if i%20 == 0 {
+			value = chart.Value{
+				Value: float64(float64(number[i]) / float64(len(values))),
+				Label: strconv.Itoa(i),
+			}
+		} else {
+			value = chart.Value{
+				Value: float64(float64(number[i]) / float64(len(values))),
+			}
 		}
 		barr = append(barr, value)
 	}
@@ -65,42 +61,19 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 		Title: "Histogram",
 		Background: chart.Style{
 			Padding: chart.Box{
-				Top: 40,
+				Top:   40,
+				Right: -100,
 			},
 		},
-		Height:   600,
-		Width:    900,
-		BarWidth: 1,
-		Bars:     barr,
+		BarSpacing:   5,
+		ColorPalette: chart.DefaultColorPalette,
+		Height:       600,
+		Width:        810,
+		BarWidth:     15,
+		Bars:         barr,
 	}
 
 	f, _ := os.Create(".tmp/hist.png")
-	defer f.Close()
 	graph.Render(chart.PNG, f)
-	/*
-		graph2 := chart.BarChart{
-			Title: "Test Bar Chart",
-			Background: chart.Style{
-				Padding: chart.Box{
-					Top: 20,
-				},
-			},
-			BarSpacing: 0,
-			Height:     600,
-			Width:      1000,
-			BarWidth:   1,
-			Bars: []chart.Value{
-				{Value: 5.25, Label: "Blue", Style: chart.Style{StrokeColor: chart.ColorAlternateGray}},
-				{Value: 4.88, Label: "Green", Style: chart.Style{StrokeColor: chart.ColorAlternateGray}},
-				{Value: 4.74, Label: "Gray", Style: chart.Style{StrokeColor: chart.ColorAlternateGray}},
-				{Value: 3.22, Label: "Orange", Style: chart.Style{StrokeColor: chart.ColorAlternateGray}},
-				{Value: 3, Label: "Test", Style: chart.Style{StrokeColor: chart.ColorAlternateGray}},
-				{Value: 2.27, Label: "??", Style: chart.Style{StrokeColor: chart.ColorAlternateGray}},
-				{Value: 1, Label: "!!"},
-			},
-		}
-
-		f1, _ := os.Create("output.png")
-		defer f.Close()
-		graph2.Render(chart.PNG, f1)*/
+	f.Close()
 }
