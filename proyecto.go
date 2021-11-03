@@ -118,7 +118,7 @@ func GrayButton(application fyne.App, grayImage *image.Gray, lutGray map[int]int
 	window.SetContent(container.NewBorder(nil, canvasText, nil, nil, image,
 		mouse.New(grayImage, canvasText, text)))
 
-	colors, values, numbersOfPixel, _, _, _, brightness, contrast :=
+	_, values, numbersOfPixel, _, _, _, brightness, contrast :=
 		calculate(grayImage, width, height, format)
 
 	imageInformationItem := fyne.NewMenuItem("Image Information", func() {
