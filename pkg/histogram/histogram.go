@@ -1,7 +1,6 @@
 package histogram
 
 import (
-	"fmt"
 	"os"
 	"strconv"
 
@@ -42,7 +41,7 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 	}
 
 	barr := make([]chart.Value, 0)
-	fmt.Println(len(values))
+	// fmt.Println(len(values))
 	for i := 0; i < len(number); i++ {
 		value := chart.Value{}
 		if i%20 == 0 {
@@ -73,7 +72,7 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 		Bars:         barr,
 	}
 
-	f, _ := os.Create(".tmp/hist.png")
-	graph.Render(chart.PNG, f)
-	f.Close()
+	out, _ := os.Create(".tmp/hist.png")
+	graph.Render(chart.PNG, out)
+	out.Close()
 }
