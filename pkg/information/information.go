@@ -13,5 +13,4 @@ func Information(format string, width, height, min, max int, brightness, contras
 		"\nBrightness: " + strconv.Itoa(int(brightness)) + "\nContrast: " +
 		strconv.Itoa(int(contrast))
 	return information
-
 }

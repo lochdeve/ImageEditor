@@ -7,6 +7,8 @@ import (
 	"image/png"
 	"os"
 	"strings"
+
+	"golang.org/x/image/tiff"
 )
 
 func LoadImage(fileName string) (image.Image, string, error) {
@@ -38,7 +40,8 @@ func SaveImage(fileName string, img image.Image) error {
 	parts := strings.Split(fileName, ".")
 	if len(parts) == 2 {
 		extension := parts[1]
-		if extension == "jpg" || extension == "jpeg" || extension == "png" {
+		if extension == "jpg" || extension == "jpeg" || extension == "png" ||
+			extension == "tiff" {
 			fimg, err = os.Create(fileName)
 			if err != nil {
 				return err
@@ -46,7 +49,7 @@ func SaveImage(fileName string, img image.Image) error {
 			err = encodeImage(extension, fimg, img)
 			fimg.Close()
 		} else {
-			err = errors.New("Unsupported format. Supported formats: png, jpg and jpeg.")
+			err = errors.New("Unsupported format. Supported formats: png, jpg, jpeg and tiff.")
 		}
 	} else {
 		err = errors.New("The file has not any extension.")
@@ -61,6 +64,8 @@ func encodeImage(extension string, fimg *os.File, img image.Image) error {
 		err = jpeg.Encode(fimg, img, nil)
 	case "png":
 		err = png.Encode(fimg, img)
+	case "tiff":
+		err = tiff.Encode(fimg, img, nil)
 	}
 	return err
 }

@@ -103,15 +103,21 @@ func AdjustBrightnessAndContrast(newBrightness, newContrast float64,
 }
 
 func Entropy(numbersOfPixel map[int]int, size int) float64 {
-	var entropy float64
+	entropy := 0.0
+	/*fmt.Println("Tamaño: ", size)
+	fmt.Println("Número de pixels: ", len(numbersOfPixel))
+	numerocolores := 0*/
 	for i := 0; i < len(numbersOfPixel); i++ {
-		if numbersOfPixel[i] != 0 {
-			p := float64(float64(numbersOfPixel[i]) / float64(size))
-			entropy += float64(p * math.Log2(p))
+		if numbersOfPixel[i] > 0 {
+			/*numerocolores++
+			fmt.Println(numbersOfPixel[i])*/
+			p := float64(numbersOfPixel[i]) / float64(size)
+			entropy += p * math.Log2(p)
 		}
 	}
 	entropy *= -1.0
-	// fmt.Print(entropy)
+	/*fmt.Println(entropy)
+	fmt.Println(numerocolores)*/
 	return entropy
 }
 
@@ -127,6 +133,21 @@ func ScaleGray(img image.Image, width, height int) *image.Gray {
 		}
 	}
 	return img2
+}
+
+func Gamma(grayImage *image.Gray, width, height int, gammaValue float64) *image.Gray {
+	img := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			CurrentColor := float64(grayImage.GrayAt(i, j).Y)
+			a := CurrentColor / 255.0
+			b := math.Pow(a, gammaValue)
+			colorOut := b * 255.0
+			newColor := color.Gray{uint8(colorOut)}
+			img.Set(i, j, newColor)
+		}
+	}
+	return img
 }
 
 func ImageDifference(image1 *image.Gray, image2 image.Image) (*image.Gray, error) {

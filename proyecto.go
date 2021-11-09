@@ -6,9 +6,9 @@ import (
 	"strings"
 
 	calculate "vpc/pkg/calculate"
-	graybutton "vpc/pkg/grayButton"
 	information "vpc/pkg/information"
 	loadandsave "vpc/pkg/loadandsave"
+	"vpc/pkg/menu"
 	mouse "vpc/pkg/mouse"
 	newwindow "vpc/pkg/newWindow"
 	operations "vpc/pkg/operations"
@@ -64,6 +64,7 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 						calculate.Calculate(grayImage, width, height, format)
 					informationTape := information.Information(format, width, height, min,
 						max, brightness, contrast, entropy)
+
 					lutGray := operations.LutGray()
 
 					windowName := strings.Split(fileName, "/")
@@ -78,7 +79,8 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					})
 
 					scaleGrayItem := fyne.NewMenuItem("Scale gray", func() {
-						graybutton.GrayButton(application, grayImage, lutGray, windowName[len(windowName)-1], format, informationTape)
+						menu.GeneralMenu(application, grayImage, lutGray,
+							windowName[len(windowName)-1], format)
 					})
 
 					quitItem := fyne.NewMenuItem("Quit", func() {
@@ -96,7 +98,7 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 				}
 			}
 		}, window)
-		fd.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".jpeg"}))
+		fd.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".jpeg", ".tiff"}))
 		fd.Show()
 	})
 	return fileItem
