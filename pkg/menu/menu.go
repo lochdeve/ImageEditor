@@ -69,6 +69,41 @@ func GeneralMenu(application fyne.App, grayImage *image.Gray,
 	changeMapItem :=
 		changeMapButton(application, width, height, grayImage, lutGray, format, window)
 
+	roiItem := fyne.NewMenuItem("Region of interest", func() {
+		roiWindow := newwindow.NewWindow(application, 150, 150, input)
+
+		label1 := widget.NewLabel("Start Point: ")
+		label2 := widget.NewLabel("Final Point: ")
+		point1I := widget.NewEntry()
+		point1I.SetPlaceHolder("i1:")
+		point1J := widget.NewEntry()
+		point1J.SetPlaceHolder("j1:")
+		point2I := widget.NewEntry()
+		point2I.SetPlaceHolder("i2:")
+		point2J := widget.NewEntry()
+		point2J.SetPlaceHolder("j2:")
+
+		initialPoint := container.NewVBox(label1, point1I, point1J)
+		finalPoint := container.NewVBox(label2, point2I, point2J)
+		content := container.NewVBox(container.NewHBox(initialPoint, finalPoint), widget.NewButton("Save", func() {
+			point1IInt, _ := strconv.Atoi(point1I.Text)
+			point1JInt, _ := strconv.Atoi(point1J.Text)
+			point2IInt, _ := strconv.Atoi(point2I.Text)
+			point2JInt, _ := strconv.Atoi(point2J.Text)
+			if point1IInt < 0 || point1JInt < 0 || point2IInt < 0 || point2JInt < 0 {
+				dialog.ShowError(errors.New("the i and j values must be positive"),
+					roiWindow)
+			}
+			if point1IInt > width || point1JInt > height || point2IInt > width || point2JInt > height {
+				dialog.ShowError(errors.New("The i value must be lower than "+strconv.Itoa(width)+" and j value must be lower than "+strconv.Itoa(height)),
+					roiWindow)
+			}
+		}))
+
+		roiWindow.SetContent(content)
+		roiWindow.Show()
+	})
+
 	quitItem := fyne.NewMenuItem("Quit", func() {
 		window.Close()
 	})
@@ -82,7 +117,7 @@ func GeneralMenu(application fyne.App, grayImage *image.Gray,
 		cumulativeHistogramItem, separatorItem, negativeItem, separatorItem,
 		brightnessAndContrastItem, separatorItem, gammaButton, separatorItem,
 		equalizationItem, separatorItem, imageDifferenceItem, separatorItem,
-		changeMapItem)
+		changeMapItem, separatorItem, roiItem)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -100,7 +135,7 @@ func gammaButton(application fyne.App, grayImage *image.Gray,
 			if err != nil {
 				dialog.ShowError(err, windowGamma)
 			} else if number > 20.0 || number < 0.05 {
-				dialog.ShowError(errors.New("The value must be between 0.05 and 20.0"),
+				dialog.ShowError(errors.New("the value must be between 0.05 and 20.0"),
 					windowGamma)
 			} else {
 				img := operations.Gamma(grayImage, grayImage.Bounds().Dx(),
@@ -174,7 +209,7 @@ func differenceButton(application fyne.App, width, height int,
 					dialog.ShowError(err, window)
 				} else if grayImage.Bounds().Dx() != image.Bounds().Dx() ||
 					grayImage.Bounds().Dy() != image.Bounds().Dy() {
-					dialog.ShowError(errors.New("The image must have the same dimensions."), window)
+					dialog.ShowError(errors.New("the image must have the same dimensions"), window)
 				} else {
 					newWindow := newwindow.NewWindow(application, image.Bounds().Dx(),
 						image.Bounds().Dy(), "Used Image")
@@ -208,7 +243,7 @@ func changeMapButton(application fyne.App, width, height int,
 					dialog.ShowError(err, window)
 				} else if grayImage.Bounds().Dx() != image.Bounds().Dx() ||
 					grayImage.Bounds().Dy() != image.Bounds().Dy() {
-					dialog.ShowError(errors.New("The image must have the same dimensions."), window)
+					dialog.ShowError(errors.New("the image must have the same dimensions"), window)
 				} else {
 					newWindow := newwindow.NewWindow(application, image.Bounds().Dx(),
 						image.Bounds().Dy(), "Used Image")
