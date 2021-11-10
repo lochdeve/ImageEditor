@@ -5,6 +5,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"vpc/pkg/histogram"
 
 	"gonum.org/v1/plot/plotter"
 )
@@ -183,4 +184,37 @@ func ImageDifference(image1 *image.Gray, image2 image.Image) (*image.Gray, error
 		}
 	}
 	return differenceImage, nil
+}
+
+func EqualizeAnImage(imageHistogram map[int]int, grayImage *image.Gray) *image.Gray {
+	width := grayImage.Bounds().Dx()
+	height := grayImage.Bounds().Dy()
+	img := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	equalizeLut := histogram.Equalization(imageHistogram, width*height)
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			color := color.Gray{uint8(equalizeLut[int(grayImage.GrayAt(i, j).Y)])}
+			img.SetGray(i, j, color)
+		}
+	}
+	return img
+}
+
+func ChangeMap(difference *image.Gray, img image.Image, threshold float64) image.Image {
+	width := img.Bounds().Dx()
+	height := img.Bounds().Dy()
+	newImage := image.NewRGBA(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			var newColor color.RGBA
+			if difference.GrayAt(i, j).Y >= uint8(threshold) {
+				newColor = color.RGBA{R: uint8(255), G: uint8(0), B: uint8(0), A: uint8(255)}
+			} else {
+				r, g, b, a := img.At(i, j).RGBA()
+				newColor = color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
+			}
+			newImage.SetRGBA(i, j, newColor)
+		}
+	}
+	return newImage
 }

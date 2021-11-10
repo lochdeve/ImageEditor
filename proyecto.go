@@ -30,9 +30,9 @@ func main() {
 func interfaz() {
 	application := app.New()
 	mainWindow := application.NewWindow("Hello")
-	// mainWindow.Resize(fyne.NewSize(500, 500))
 	window := screenshot.GetDisplayBounds(0)
-	mainWindow.Resize(fyne.NewSize(float32(window.Bounds().Dx()), float32(window.Bounds().Dy())))
+	mainWindow.Resize(fyne.NewSize(float32(window.Bounds().Dx()),
+		float32(window.Bounds().Dy())))
 	openFileItem := buttonOpen(application, mainWindow)
 
 	quitItem := fyne.NewMenuItem("Quit", func() {
@@ -50,7 +50,7 @@ func interfaz() {
 
 func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 	fileItem := fyne.NewMenuItem("Open image", func() {
-		fd := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if reader != nil {
 				fileName := reader.URI().String()[7:]
 				colorImage, format, err := loadandsave.LoadImage(fileName)
@@ -98,78 +98,9 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 				}
 			}
 		}, window)
-		fd.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".jpeg", ".tiff"}))
-		fd.Show()
+		newDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png",
+			".jpeg", ".tiff"}))
+		newDialog.Show()
 	})
 	return fileItem
 }
-
-/*func differenceDialogItem(application fyne.App, width, height, opcion int,
-	grayImage *image.Gray) *fyne.MenuItem {
-	dialogItem := fyne.NewMenuItem("Image difference", func() {
-		windowImage := newwindow.NewWindow(application, width, height, "difference")
-		hola(application, windowImage, grayImage, opcion)
-		item := buttonOpen(application, windowImage)
-		menuItem := fyne.NewMenu("Operations", item)
-		menu := fyne.NewMainMenu(menuItem)
-		windowImage.SetMainMenu(menu)
-		windowImage.Show()
-	})
-	return dialogItem
-}*/
-
-/*func hola(application fyne.App, windowImage fyne.Window, grayImage *image.Gray, opcion int) {
-var Edu string
-dialog.ShowFileOpen(func(reader fyne.URIReadCloser, err error) {
-	if reader != nil {
-		fileName := reader.URI().String()[7:]
-		image, _, err := loadandsave.LoadImage(fileName)
-		if err != nil {
-			dialog.ShowError(err, windowImage)
-		}
-		difference, err := operations.ImageDifference(grayImage, image)
-		Edu = "Edu"
-		if err != nil {
-			dialog.ShowError(err, windowImage)
-		}
-		if opcion == 1 {
-			canvasImage := canvas.NewImageFromImage(image)
-			newWindow := newwindow.NewWindow(application, image.Bounds().Dx(), image.Bounds().Dy(), fileName)
-			newWindow.SetContent(canvasImage)
-			newWindow.Show()
-			graybutton.GrayButton(application, difference, nil, "", "", "")
-		} else {
-			canvasImage := canvas.NewImageFromImage(difference)
-			windowImage.SetContent(canvasImage)
-		}
-	}
-}, windowImage)
-fmt.Print(Edu)
-// dialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png", ".jpeg"}))
-
-/*dialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-	if reader != nil {
-		fileName := reader.URI().String()[7:]
-		image, _, err := loadandsave.LoadImage(fileName)
-		if err != nil {
-			dialog.ShowError(err, windowImage)
-		}
-		difference, err := operations.ImageDifference(grayImage, image)
-		if err != nil {
-			dialog.ShowError(err, windowImage)
-		}
-
-		if opcion == 1 {
-			canvasImage := canvas.NewImageFromImage(image)
-			newWindow := newWindow(application, image.Bounds().Dx(), image.Bounds().Dy(), fileName)
-			newWindow.SetContent(canvasImage)
-			newWindow.Show()
-			GrayButton(application, difference, nil, "", "", "")
-		} else {
-			canvasImage := canvas.NewImageFromImage(difference)
-			windowImage.SetContent(canvasImage)
-		}
-	}
-}, windowImage)
-dialog.Show()*/
-// }

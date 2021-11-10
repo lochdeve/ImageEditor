@@ -3,6 +3,7 @@ package saveitem
 import (
 	"image"
 	"vpc/pkg/loadandsave"
+	newwindow "vpc/pkg/newWindow"
 
 	"fyne.io/fyne/v2"
 	"fyne.io/fyne/v2/container"
@@ -11,9 +12,8 @@ import (
 )
 
 func SaveItem(application fyne.App, image image.Image) *fyne.MenuItem {
-	saveImageItem := fyne.NewMenuItem("Save Image", func() {
-		fileWindow := application.NewWindow("SaveFile")
-		fileWindow.Resize(fyne.NewSize(500, 500))
+	return fyne.NewMenuItem("Save Image", func() {
+		fileWindow := newwindow.NewWindow(application, 500, 500, "SaveFile")
 		input := widget.NewEntry()
 		input.SetPlaceHolder("example.png")
 		content := container.NewVBox(input, widget.NewButton("Save", func() {
@@ -27,5 +27,4 @@ func SaveItem(application fyne.App, image image.Image) *fyne.MenuItem {
 		fileWindow.SetContent(content)
 		fileWindow.Show()
 	})
-	return saveImageItem
 }

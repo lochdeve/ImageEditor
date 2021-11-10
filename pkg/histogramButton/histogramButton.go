@@ -18,7 +18,7 @@ import (
 func HistogramButton(application fyne.App, window fyne.Window,
 	values plotter.Values, numbersOfPixel map[int]int, name string,
 	cumulative bool) *fyne.MenuItem {
-	histogramItem := fyne.NewMenuItem(name, func() {
+	return fyne.NewMenuItem(name, func() {
 		histogram.Plote(numbersOfPixel, values, cumulative)
 		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
 		if err != nil {
@@ -34,5 +34,4 @@ func HistogramButton(application fyne.App, window fyne.Window,
 			windowImage.Show()
 		}
 	})
-	return histogramItem
 }

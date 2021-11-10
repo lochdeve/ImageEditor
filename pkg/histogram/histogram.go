@@ -1,8 +1,8 @@
 package histogram
 
 import (
+	"math"
 	"os"
-	"strconv"
 
 	"github.com/wcharczuk/go-chart/v2"
 	"gonum.org/v1/plot/plotter"
@@ -34,45 +34,43 @@ func CumulativeHistogram(histogram map[int]int) map[int]int {
 }
 
 func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
-
 	number := numbersOfPixel
 	if cumulative {
 		number = CumulativeHistogram(numbersOfPixel)
 	}
 
-	barr := make([]chart.Value, 0)
+	Xaxis := []float64{}
+	Yaxis := []float64{}
 	// fmt.Println(len(values))
+	value := chart.ContinuousSeries{}
 	for i := 0; i < len(number); i++ {
-		value := chart.Value{}
-		if i%20 == 0 {
-			value = chart.Value{
-				Value: float64(float64(number[i]) / float64(len(values))),
-				Label: strconv.Itoa(i),
-			}
-		} else {
-			value = chart.Value{
-				Value: float64(float64(number[i]) / float64(len(values))),
-			}
-		}
-		barr = append(barr, value)
+		Yaxis = append(Yaxis, float64(float64(number[i])/float64(len(values))))
+		Xaxis = append(Xaxis, float64(i))
 	}
-	graph := chart.BarChart{
-		Title: "Histogram",
-		Background: chart.Style{
-			Padding: chart.Box{
-				Top:   40,
-				Right: -100,
-			},
-		},
-		BarSpacing:   5,
-		ColorPalette: chart.DefaultColorPalette,
-		Height:       600,
-		Width:        810,
-		BarWidth:     15,
-		Bars:         barr,
+	value = chart.ContinuousSeries{
+		XValues: Xaxis,
+		YValues: Yaxis,
 	}
 
-	out, _ := os.Create(".tmp/hist.png")
-	graph.Render(chart.PNG, out)
-	out.Close()
+	graph := chart.Chart{
+		Series: []chart.Series{
+			value,
+		},
+	}
+
+	ouputFile, _ := os.Create(".tmp/hist.png")
+	graph.Render(chart.PNG, ouputFile)
+	ouputFile.Close()
+}
+
+func Equalization(histogram map[int]int, size int) map[int]int {
+	cumulativeHistogram := CumulativeHistogram(histogram)
+	ecualizeHistogram := make(map[int]int, 255)
+
+	for i := 0; i < len(cumulativeHistogram); i++ {
+		mul := float64(cumulativeHistogram[i]) * float64(256.0)
+		cociente := float64(mul / float64(size))
+		ecualizeHistogram[i] = int(math.Max(float64(0), math.Round(float64(cociente)-1.0)))
+	}
+	return ecualizeHistogram
 }
