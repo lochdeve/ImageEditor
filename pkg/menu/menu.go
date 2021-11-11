@@ -93,10 +93,12 @@ func GeneralMenu(application fyne.App, grayImage *image.Gray,
 			if point1IInt < 0 || point1JInt < 0 || point2IInt < 0 || point2JInt < 0 {
 				dialog.ShowError(errors.New("the i and j values must be positive"),
 					roiWindow)
-			}
-			if point1IInt > width || point1JInt > height || point2IInt > width || point2JInt > height {
+			} else if point1IInt > width || point1JInt > height || point2IInt > width || point2JInt > height {
 				dialog.ShowError(errors.New("The i value must be lower than "+strconv.Itoa(width)+" and j value must be lower than "+strconv.Itoa(height)),
 					roiWindow)
+			} else {
+				ROIimage := operations.ROI(grayImage, point1IInt, point1JInt, point2IInt, point2JInt)
+				GeneralMenu(application, ROIimage, lutGray, "ROI", format)
 			}
 		}))
 

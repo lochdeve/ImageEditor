@@ -42,8 +42,7 @@ func interfaz() {
 	newItemSeparator := fyne.NewMenuItemSeparator()
 
 	fileItem := fyne.NewMenu("File", openFileItem, newItemSeparator, quitItem)
-	optionItem := fyne.NewMenu("Options")
-	menu := fyne.NewMainMenu(fileItem, optionItem)
+	menu := fyne.NewMainMenu(fileItem)
 	mainWindow.SetMainMenu(menu)
 	mainWindow.ShowAndRun()
 }

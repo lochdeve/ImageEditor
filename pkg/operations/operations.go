@@ -2,6 +2,7 @@ package operations
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"math"
@@ -105,20 +106,17 @@ func AdjustBrightnessAndContrast(newBrightness, newContrast float64,
 
 func Entropy(numbersOfPixel map[int]int, size int) float64 {
 	entropy := 0.0
-	/*fmt.Println("Tamaño: ", size)
-	fmt.Println("Número de pixels: ", len(numbersOfPixel))
-	numerocolores := 0*/
 	for i := 0; i < len(numbersOfPixel); i++ {
 		if numbersOfPixel[i] > 0 {
-			/*numerocolores++
-			fmt.Println(numbersOfPixel[i])*/
 			p := float64(numbersOfPixel[i]) / float64(size)
+			/*fmt.Println("P:", p)
+			fmt.Println("Log:", math.Log2(p))
+			fmt.Println("Mult:", p*math.Log2(p))
+			fmt.Println()*/
 			entropy += p * math.Log2(p)
 		}
 	}
 	entropy *= -1.0
-	/*fmt.Println(entropy)
-	fmt.Println(numerocolores)*/
 	return entropy
 }
 
@@ -211,10 +209,28 @@ func ChangeMap(difference *image.Gray, img image.Image, threshold float64) image
 				newColor = color.RGBA{R: uint8(255), G: uint8(0), B: uint8(0), A: uint8(255)}
 			} else {
 				r, g, b, a := img.At(i, j).RGBA()
+				r, g, b, a = r>>8, g>>8, b>>8, a>>8
 				newColor = color.RGBA{R: uint8(r), G: uint8(g), B: uint8(b), A: uint8(a)}
 			}
 			newImage.SetRGBA(i, j, newColor)
 		}
+	}
+	return newImage
+}
+
+func ROI(grayImage *image.Gray, i1, j1, i2, j2 int) *image.Gray {
+	width := j2 - j1
+	height := i2 - i1
+	newImage := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	k := 0
+	z := 0
+	for i := i1; i <= i2; i++ {
+		for j := j1; j <= j2; j++ {
+			fmt.Println(grayImage.GrayAt(i, j))
+			newImage.Set(k, z, grayImage.GrayAt(i, j))
+			z++
+		}
+		k++
 	}
 	return newImage
 }
