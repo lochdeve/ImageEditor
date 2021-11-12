@@ -2,6 +2,7 @@ package menu
 
 import (
 	"errors"
+	"fmt"
 	"image"
 	"image/color"
 	"strconv"
@@ -69,46 +70,9 @@ func GeneralMenu(application fyne.App, grayImage *image.Gray,
 	changeMapItem :=
 		changeMapButton(application, width, height, grayImage, lutGray, format, window)
 
-	roiItem := fyne.NewMenuItem("Region of interest", func() {
-		roiWindow := newwindow.NewWindow(application, 150, 150, input)
+	sectionItem := sectionsButton(application)
 
-		label1 := widget.NewLabel("Start Point: ")
-		label2 := widget.NewLabel("Final Point: ")
-		point1I := widget.NewEntry()
-		point1I.SetPlaceHolder("i1:")
-		point1J := widget.NewEntry()
-		point1J.SetPlaceHolder("j1:")
-		point2I := widget.NewEntry()
-		point2I.SetPlaceHolder("i2:")
-		point2J := widget.NewEntry()
-		point2J.SetPlaceHolder("j2:")
-
-		initialPoint := container.NewVBox(label1, point1I, point1J)
-		finalPoint := container.NewVBox(label2, point2I, point2J)
-		content := container.NewVBox(container.NewHBox(initialPoint, finalPoint), widget.NewButton("Save", func() {
-			point1IInt, _ := strconv.Atoi(point1I.Text)
-			point1JInt, _ := strconv.Atoi(point1J.Text)
-			point2IInt, _ := strconv.Atoi(point2I.Text)
-			point2JInt, _ := strconv.Atoi(point2J.Text)
-			if point1IInt < 0 || point1JInt < 0 || point2IInt < 0 || point2JInt < 0 {
-				dialog.ShowError(errors.New("the i and j values must be positive"),
-					roiWindow)
-			} else if point1IInt > width || point1JInt > height || point2IInt > width || point2JInt > height {
-				dialog.ShowError(errors.New("The i value must be lower than "+strconv.Itoa(width)+" and j value must be lower than "+strconv.Itoa(height)),
-					roiWindow)
-			} else {
-				ROIimage := operations.ROI(grayImage, point1IInt, point1JInt, point2IInt, point2JInt)
-				GeneralMenu(application, ROIimage, lutGray, "ROI", format)
-			}
-		}))
-
-		roiWindow.SetContent(content)
-		roiWindow.Show()
-	})
-
-	quitItem := fyne.NewMenuItem("Quit", func() {
-		window.Close()
-	})
+	quitItem := quitButton(window)
 
 	separatorItem := fyne.NewMenuItemSeparator()
 
@@ -119,7 +83,7 @@ func GeneralMenu(application fyne.App, grayImage *image.Gray,
 		cumulativeHistogramItem, separatorItem, negativeItem, separatorItem,
 		brightnessAndContrastItem, separatorItem, gammaButton, separatorItem,
 		equalizationItem, separatorItem, imageDifferenceItem, separatorItem,
-		changeMapItem, separatorItem, roiItem)
+		changeMapItem, separatorItem, sectionItem)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -262,8 +226,8 @@ func changeMapButton(application fyne.App, width, height int,
 					_, values, numbersOfPixel, _, _, _, _, _ :=
 						calculate.Calculate(difference, width, height, format)
 
-					histogramItem := histogrambutton.HistogramButton(application, window, values,
-						numbersOfPixel, "Histogram", false)
+					histogramItem := histogrambutton.HistogramButton(application, window,
+						values, numbersOfPixel, "Histogram", false)
 
 					cumulativeHistogramItem := histogrambutton.HistogramButton(application,
 						window, values, numbersOfPixel, "Cumulative Histogram", true)
@@ -279,11 +243,19 @@ func changeMapButton(application fyne.App, width, height int,
 						content := widget.NewButton("Calculate", func() {
 							threshold, _ := data.Get()
 							newImage := operations.ChangeMap(difference, image, threshold)
-							r := newwindow.NewWindow(application,
-								newImage.Bounds().Dx(), newImage.Bounds().Dy(), "r")
+							windowResult := newwindow.NewWindow(application,
+								newImage.Bounds().Dx(), newImage.Bounds().Dy(), "Result")
 							canvasR := canvas.NewImageFromImage(newImage)
-							r.SetContent(canvasR)
-							r.Show()
+
+							quitItem := quitButton(windowResult)
+							separatorItem := fyne.NewMenuItemSeparator()
+							menuItem := fyne.NewMenu("File", saveitem.SaveItem(application,
+								newImage), separatorItem, quitItem)
+							menu := fyne.NewMainMenu(menuItem)
+							windowResult.SetMainMenu(menu)
+
+							windowResult.SetContent(canvasR)
+							windowResult.Show()
 						})
 
 						threshold := canvas.NewText("Threshold", color.White)
@@ -295,14 +267,12 @@ func changeMapButton(application fyne.App, width, height int,
 						windowThreshold.Show()
 					})
 
-					quitItem := fyne.NewMenuItem("Quit", func() {
-						differenceWindow.Close()
-					})
+					quitItem := quitButton(differenceWindow)
 
 					separatorItem := fyne.NewMenuItemSeparator()
 
-					menuItem := fyne.NewMenu("File", saveitem.SaveItem(application, difference),
-						separatorItem, quitItem)
+					menuItem := fyne.NewMenu("File", saveitem.SaveItem(application,
+						difference), separatorItem, quitItem)
 					menuItem2 := fyne.NewMenu("User value", thresHoldItem)
 					menuItem3 := fyne.NewMenu("Histograms", histogramItem, separatorItem,
 						cumulativeHistogramItem)
@@ -316,4 +286,66 @@ func changeMapButton(application fyne.App, width, height int,
 			".jpeg", ".tiff"}))
 		newDialog.Show()
 	})
+}
+
+func sectionsButton(application fyne.App) *fyne.MenuItem {
+	return fyne.NewMenuItem("Linear Adjustment in Sections", func() {
+		windowSections := newwindow.NewWindow(application, 500, 200, "Sections Number")
+		input := widget.NewEntry()
+		input.SetPlaceHolder("0")
+		content := container.NewVBox(input, widget.NewButton("Enter", func() {
+			number, err := strconv.Atoi(input.Text)
+			if err != nil {
+				dialog.ShowError(err, windowSections)
+			} else {
+				windowValues := newwindow.NewWindow(application, 500, 500, "Sections Values")
+
+				label1 := widget.NewLabel("Coordinates X: ")
+				label2 := widget.NewLabel("Coordinates Y: ")
+				coordinatesX := container.NewVBox(label1)
+				coordinatesY := container.NewVBox(label2)
+				var point *widget.Entry
+				var point2 *widget.Entry
+				for i := 0; i < number; i++ {
+					point = widget.NewEntry()
+					point.SetPlaceHolder("x:")
+					point2 = widget.NewEntry()
+					point2.SetPlaceHolder("y:")
+					coordinatesX.Add(point)
+					coordinatesY.Add(point2)
+				}
+				content := container.NewVBox(container.NewHBox(coordinatesX, coordinatesY),
+					widget.NewButton("Enter", func() {
+						var coordinates []pair
+						for i := 0; i < number; i++ {
+							point1, _ := strconv.Atoi(point.Text)
+							point2, _ := strconv.Atoi(point2.Text)
+							coordinates = append(coordinates, pair{x: point1, y: point2})
+						}
+						for i := 0; i < len(coordinates); i++ {
+							fmt.Println(coordinates[i])
+						}
+					}))
+				windowValues.SetContent(content)
+				windowValues.Show()
+
+				/*img := operations.Gamma(grayImage, grayImage.Bounds().Dx(),
+					grayImage.Bounds().Dy(), number)
+				GeneralMenu(application, img, lutGray, "Gamma Image", format)
+				windowGamma.Close()*/
+			}
+		}))
+		windowSections.SetContent(content)
+		windowSections.Show()
+	})
+}
+
+func quitButton(window fyne.Window) *fyne.MenuItem {
+	return fyne.NewMenuItem("Quit", func() {
+		window.Close()
+	})
+}
+
+type pair struct {
+	x, y int
 }

@@ -2,12 +2,12 @@ package operations
 
 import (
 	"errors"
-	"fmt"
 	"image"
 	"image/color"
 	"math"
 	"vpc/pkg/histogram"
 
+	"fyne.io/fyne/v2"
 	"gonum.org/v1/plot/plotter"
 )
 
@@ -218,19 +218,5 @@ func ChangeMap(difference *image.Gray, img image.Image, threshold float64) image
 	return newImage
 }
 
-func ROI(grayImage *image.Gray, i1, j1, i2, j2 int) *image.Gray {
-	width := j2 - j1
-	height := i2 - i1
-	newImage := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
-	k := 0
-	z := 0
-	for i := i1; i <= i2; i++ {
-		for j := j1; j <= j2; j++ {
-			fmt.Println(grayImage.GrayAt(i, j))
-			newImage.Set(k, z, grayImage.GrayAt(i, j))
-			z++
-		}
-		k++
-	}
-	return newImage
+func LinearAdjustmentInSections(application fyne.App, number int) {
 }

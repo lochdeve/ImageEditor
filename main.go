@@ -67,11 +67,14 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					lutGray := operations.LutGray()
 
 					windowName := strings.Split(fileName, "/")
-					imageWindow := newwindow.NewWindow(application, colorImage.Bounds().Dx(), colorImage.Bounds().Dy(), windowName[len(windowName)-1])
+					imageWindow := newwindow.NewWindow(application,
+						colorImage.Bounds().Dx(), colorImage.Bounds().Dy(),
+						windowName[len(windowName)-1])
 					canvasImage := canvas.NewImageFromImage(colorImage)
 					text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
 					canvasText := canvas.NewText(text, color.Opaque)
-					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil, canvasImage, mouse.New(colorImage, canvasText, text)))
+					imageWindow.SetContent(container.NewBorder(nil, canvasText, nil, nil,
+						canvasImage, mouse.New(colorImage, canvasText, text)))
 
 					imageInformationItem := fyne.NewMenuItem("Image Information", func() {
 						dialog.ShowInformation("Information", informationTape, imageWindow)
@@ -87,7 +90,8 @@ func buttonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					})
 
 					separatorItem := fyne.NewMenuItemSeparator()
-					saveItem := fyne.NewMenu("File", saveitem.SaveItem(application, grayImage), separatorItem, quitItem)
+					saveItem := fyne.NewMenu("File", saveitem.SaveItem(application,
+						grayImage), separatorItem, quitItem)
 
 					imageInformationMenu := fyne.NewMenu("ImageInformation", imageInformationItem)
 					operationItem := fyne.NewMenu("Operations", scaleGrayItem)
