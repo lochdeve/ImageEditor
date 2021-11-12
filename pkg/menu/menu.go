@@ -2,11 +2,11 @@ package menu
 
 import (
 	"errors"
-	"fmt"
 	"image"
 	"image/color"
 	"strconv"
 	calculate "vpc/pkg/calculate"
+	"vpc/pkg/histogram"
 	histogrambutton "vpc/pkg/histogramButton"
 	information "vpc/pkg/information"
 	loadandsave "vpc/pkg/loadandsave"
@@ -306,27 +306,41 @@ func sectionsButton(application fyne.App) *fyne.MenuItem {
 				coordinatesY := container.NewVBox(label2)
 				var point *widget.Entry
 				var point2 *widget.Entry
-				for i := 0; i < number; i++ {
+				var entries []pairEntry
+
+				for i := 0; i < number+1; i++ {
 					point = widget.NewEntry()
 					point.SetPlaceHolder("x:")
 					point2 = widget.NewEntry()
 					point2.SetPlaceHolder("y:")
 					coordinatesX.Add(point)
 					coordinatesY.Add(point2)
+					entries = append(entries, pairEntry{x: point, y: point2})
 				}
-				content := container.NewVBox(container.NewHBox(coordinatesX, coordinatesY),
-					widget.NewButton("Enter", func() {
-						var coordinates []pair
-						for i := 0; i < number; i++ {
-							point1, _ := strconv.Atoi(point.Text)
-							point2, _ := strconv.Atoi(point2.Text)
-							coordinates = append(coordinates, pair{x: point1, y: point2})
+				canvasImage := canvas.NewImageFromFile(".tmp/defaultGraph.jpg")
+
+				content := container.NewVBox(container.NewHBox(coordinatesX, coordinatesY))
+
+				button := func(window fyne.Window) {
+					var coordinates []pair
+					plott := make(map[int]int)
+					for i := 0; i < len(entries); i++ {
+						pointX, _ := strconv.Atoi(entries[i].x.Text)
+						pointY, _ := strconv.Atoi(entries[i].y.Text)
+						if pointX > 255 || pointY > 255 || pointX < 0 || pointY < 0 {
+							dialog.ShowError(errors.New("the points must be between 0 and 255"), windowValues)
 						}
-						for i := 0; i < len(coordinates); i++ {
-							fmt.Println(coordinates[i])
-						}
-					}))
-				windowValues.SetContent(content)
+						coordinates = append(coordinates, pair{x: pointX, y: pointY})
+						plott[pointX] = pointY
+					}
+					histogram.Plotesections(plott)
+					canvasImage = canvas.NewImageFromFile(".tmp/sectHist.png")
+					canvasImage.Refresh()
+					window.Content().Refresh()
+				}
+
+				windowValues.SetContent(container.NewBorder(content,
+					widget.NewButton("Enter", func() { button(windowValues) }), nil, nil, canvasImage))
 				windowValues.Show()
 
 				/*img := operations.Gamma(grayImage, grayImage.Bounds().Dx(),
@@ -348,4 +362,8 @@ func quitButton(window fyne.Window) *fyne.MenuItem {
 
 type pair struct {
 	x, y int
+}
+
+type pairEntry struct {
+	x, y *widget.Entry
 }

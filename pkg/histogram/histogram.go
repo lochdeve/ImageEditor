@@ -63,6 +63,33 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 	ouputFile.Close()
 }
 
+func Plotesections(numbersOfPixel map[int]int) {
+
+	Xaxis := []float64{}
+	Yaxis := []float64{}
+	// fmt.Println(len(values))
+	value := chart.ContinuousSeries{}
+	for index, element := range numbersOfPixel {
+		Yaxis = append(Yaxis, float64(float64(element)))
+		Xaxis = append(Xaxis, float64(index))
+	}
+
+	value = chart.ContinuousSeries{
+		XValues: Xaxis,
+		YValues: Yaxis,
+	}
+
+	graph := chart.Chart{
+		Series: []chart.Series{
+			value,
+		},
+	}
+
+	ouputFile, _ := os.Create(".tmp/sectHist.png")
+	graph.Render(chart.PNG, ouputFile)
+	ouputFile.Close()
+}
+
 func Equalization(histogram map[int]int, size int) map[int]int {
 	cumulativeHistogram := CumulativeHistogram(histogram)
 	ecualizeHistogram := make(map[int]int, 255)
