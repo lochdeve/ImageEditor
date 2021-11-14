@@ -6,7 +6,7 @@ import (
 	"image/color"
 	"strconv"
 	calculate "vpc/pkg/calculate"
-	"vpc/pkg/histogram"
+	histogram "vpc/pkg/histogram"
 	histogrambutton "vpc/pkg/histogramButton"
 	information "vpc/pkg/information"
 	loadandsave "vpc/pkg/loadandsave"
@@ -70,7 +70,44 @@ func GeneralMenu(application fyne.App, grayImage *image.Gray,
 	changeMapItem :=
 		changeMapButton(application, width, height, grayImage, lutGray, format, window)
 
-	sectionItem := sectionsButton(application)
+	sectionItem := sectionsButton(application, grayImage, lutGray, width, height, format)
+
+	roiItem := fyne.NewMenuItem("Region of interest", func() {
+		roiWindow := newwindow.NewWindow(application, 150, 150, input)
+
+		label1 := widget.NewLabel("Start Point: ")
+		label2 := widget.NewLabel("Final Point: ")
+		point1I := widget.NewEntry()
+		point1I.SetPlaceHolder("i1:")
+		point1J := widget.NewEntry()
+		point1J.SetPlaceHolder("j1:")
+		point2I := widget.NewEntry()
+		point2I.SetPlaceHolder("i2:")
+		point2J := widget.NewEntry()
+		point2J.SetPlaceHolder("j2:")
+
+		initialPoint := container.NewVBox(label1, point1I, point1J)
+		finalPoint := container.NewVBox(label2, point2I, point2J)
+		content := container.NewVBox(container.NewHBox(initialPoint, finalPoint), widget.NewButton("Save", func() {
+			point1IInt, _ := strconv.Atoi(point1I.Text)
+			point1JInt, _ := strconv.Atoi(point1J.Text)
+			point2IInt, _ := strconv.Atoi(point2I.Text)
+			point2JInt, _ := strconv.Atoi(point2J.Text)
+			if point1IInt < 0 || point1JInt < 0 || point2IInt < 0 || point2JInt < 0 {
+				dialog.ShowError(errors.New("the i and j values must be positive"),
+					roiWindow)
+			} else if point1IInt > width || point1JInt > height || point2IInt > width || point2JInt > height {
+				dialog.ShowError(errors.New("The i value must be lower than "+strconv.Itoa(width)+" and j value must be lower than "+strconv.Itoa(height)),
+					roiWindow)
+			} else {
+				ROIimage := operations.ROI(grayImage, point1IInt, point1JInt, point2IInt, point2JInt)
+				GeneralMenu(application, ROIimage, lutGray, "ROI", format)
+			}
+		}))
+
+		roiWindow.SetContent(content)
+		roiWindow.Show()
+	})
 
 	quitItem := quitButton(window)
 
@@ -83,7 +120,7 @@ func GeneralMenu(application fyne.App, grayImage *image.Gray,
 		cumulativeHistogramItem, separatorItem, negativeItem, separatorItem,
 		brightnessAndContrastItem, separatorItem, gammaButton, separatorItem,
 		equalizationItem, separatorItem, imageDifferenceItem, separatorItem,
-		changeMapItem, separatorItem, sectionItem)
+		changeMapItem, separatorItem, sectionItem, separatorItem, roiItem)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -288,8 +325,9 @@ func changeMapButton(application fyne.App, width, height int,
 	})
 }
 
-func sectionsButton(application fyne.App) *fyne.MenuItem {
-	return fyne.NewMenuItem("Linear Adjustment in Sections", func() {
+func sectionsButton(application fyne.App, grayImage *image.Gray,
+	lutGray map[int]int, width, height int, format string) *fyne.MenuItem {
+	return fyne.NewMenuItem("Lineal Adjustment in Sections", func() {
 		windowSections := newwindow.NewWindow(application, 500, 200, "Sections Number")
 		input := widget.NewEntry()
 		input.SetPlaceHolder("0")
@@ -317,36 +355,44 @@ func sectionsButton(application fyne.App) *fyne.MenuItem {
 					coordinatesY.Add(point2)
 					entries = append(entries, pairEntry{x: point, y: point2})
 				}
-				canvasImage := canvas.NewImageFromFile(".tmp/defaultGraph.jpg")
+				var defaultGraph map[int]int
+				histogram.Plotesections(defaultGraph)
+				canvasImage := canvas.NewImageFromFile(".tmp/sectHist.png")
 
 				content := container.NewVBox(container.NewHBox(coordinatesX, coordinatesY))
 
 				button := func(window fyne.Window) {
-					var coordinates []pair
+					var coordinates []operations.Pair
 					plott := make(map[int]int)
 					for i := 0; i < len(entries); i++ {
 						pointX, _ := strconv.Atoi(entries[i].x.Text)
 						pointY, _ := strconv.Atoi(entries[i].y.Text)
-						if pointX > 255 || pointY > 255 || pointX < 0 || pointY < 0 {
-							dialog.ShowError(errors.New("the points must be between 0 and 255"), windowValues)
+						if i != len(entries)-1 {
+							pointXplus, _ := strconv.Atoi(entries[i+1].x.Text)
+							if pointX == pointXplus {
+								dialog.ShowError(errors.New("the values of the X axis of the points can not be repeated"),
+									windowValues)
+								return
+							}
 						}
-						coordinates = append(coordinates, pair{x: pointX, y: pointY})
+						if pointX > 255 || pointY > 255 || pointX < 0 || pointY < 0 {
+							dialog.ShowError(errors.New("the points must be between 0 and 255"),
+								windowValues)
+						}
+						coordinates = append(coordinates, operations.Pair{X: pointX, Y: pointY})
 						plott[pointX] = pointY
 					}
 					histogram.Plotesections(plott)
-					canvasImage = canvas.NewImageFromFile(".tmp/sectHist.png")
-					canvasImage.Refresh()
 					window.Content().Refresh()
+					newImage := operations.LinealAdjustmentInSections(grayImage,
+						coordinates, number, width, height)
+					GeneralMenu(application, newImage, lutGray, "Sections Result", format)
 				}
 
+				windowSections.Close()
 				windowValues.SetContent(container.NewBorder(content,
 					widget.NewButton("Enter", func() { button(windowValues) }), nil, nil, canvasImage))
 				windowValues.Show()
-
-				/*img := operations.Gamma(grayImage, grayImage.Bounds().Dx(),
-					grayImage.Bounds().Dy(), number)
-				GeneralMenu(application, img, lutGray, "Gamma Image", format)
-				windowGamma.Close()*/
 			}
 		}))
 		windowSections.SetContent(content)
@@ -358,10 +404,6 @@ func quitButton(window fyne.Window) *fyne.MenuItem {
 	return fyne.NewMenuItem("Quit", func() {
 		window.Close()
 	})
-}
-
-type pair struct {
-	x, y int
 }
 
 type pairEntry struct {

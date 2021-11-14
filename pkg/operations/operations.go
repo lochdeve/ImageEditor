@@ -7,7 +7,6 @@ import (
 	"math"
 	"vpc/pkg/histogram"
 
-	"fyne.io/fyne/v2"
 	"gonum.org/v1/plot/plotter"
 )
 
@@ -109,10 +108,6 @@ func Entropy(numbersOfPixel map[int]int, size int) float64 {
 	for i := 0; i < len(numbersOfPixel); i++ {
 		if numbersOfPixel[i] > 0 {
 			p := float64(numbersOfPixel[i]) / float64(size)
-			/*fmt.Println("P:", p)
-			fmt.Println("Log:", math.Log2(p))
-			fmt.Println("Mult:", p*math.Log2(p))
-			fmt.Println()*/
 			entropy += p * math.Log2(p)
 		}
 	}
@@ -218,5 +213,45 @@ func ChangeMap(difference *image.Gray, img image.Image, threshold float64) image
 	return newImage
 }
 
-func LinearAdjustmentInSections(application fyne.App, number int) {
+func LinealAdjustmentInSections(grayImage *image.Gray, coordinates []Pair, number,
+	width, height int) *image.Gray {
+	var m, n float64
+	lut := make(map[int]int)
+	for i := 0; i < number; i++ {
+		m = (float64(coordinates[i+1].Y) - float64(coordinates[i].Y)) /
+			(float64(coordinates[i+1].X) - float64(coordinates[i].X))
+		n = float64(coordinates[i].Y) - m*float64(coordinates[i].X)
+		for j := coordinates[i].X; j <= coordinates[i+1].X; j++ {
+			lut[j] = int(math.Round(m*float64(j) + n))
+		}
+	}
+	img := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			newColor := color.Gray{uint8(lut[int(grayImage.GrayAt(i, j).Y)])}
+			img.Set(i, j, newColor)
+		}
+	}
+	return img
+}
+
+func ROI(grayImage *image.Gray, i1, j1, i2, j2 int) *image.Gray {
+	width := j2 - j1
+	height := i2 - i1
+	newImage := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	k := 0
+	z := 0
+	for i := i1; i <= i2; i++ {
+		z = 0
+		for j := j1; j <= j2; j++ {
+			newImage.Set(k, z, grayImage.GrayAt(i, j))
+			z++
+		}
+		k++
+	}
+	return newImage
+}
+
+type Pair struct {
+	X, Y int
 }

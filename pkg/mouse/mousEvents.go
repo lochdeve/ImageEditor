@@ -57,7 +57,10 @@ func (w *MouseEvents) MouseMoved(mousePosition *desktop.MouseEvent) {
 		int(mousePosition.AbsolutePosition.Y)).RGBA()
 	r, g, b = r>>8, g>>8, b>>8
 	textaux := w.size + " R:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) +
-		" B:" + strconv.Itoa(int(b)) + "\t Mouse Position => i: " + strconv.Itoa(int(mousePosition.AbsolutePosition.X)) + " j: " + strconv.Itoa(int(mousePosition.AbsolutePosition.Y))
+		" B:" + strconv.Itoa(int(b)) + "\t Mouse Position => i: " +
+		strconv.Itoa(int(mousePosition.AbsolutePosition.Y)) + " j: " +
+		strconv.Itoa(int(mousePosition.AbsolutePosition.X))
+
 	w.text.Text = textaux
 	w.text.Refresh()
 }
