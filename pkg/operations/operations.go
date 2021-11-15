@@ -6,6 +6,7 @@ import (
 	"image/color"
 	"math"
 	"vpc/pkg/histogram"
+	imagecontent "vpc/pkg/imageContent"
 
 	"gonum.org/v1/plot/plotter"
 )
@@ -24,11 +25,15 @@ func ColorsValues(image *image.Gray) ([]uint64, plotter.Values) {
 	return colors, values
 }
 
-func Negative(img *image.Gray, lutGray map[int]int, width, height int) *image.Gray {
-	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+func Negative(content imagecontent.InformationImage,
+	lutGray map[int]int) *image.Gray {
+	width := content.Image().Bounds().Dx()
+	height := content.Image().Bounds().Dy()
+	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{width, height}})
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
-			newColor := color.Gray{uint8(float32(lutGray[int(img.GrayAt(i, j).Y)]))}
+			newColor := color.Gray{uint8(float32(lutGray[int(content.Image().GrayAt(i, j).Y)]))}
 			img2.Set(i, j, newColor)
 		}
 	}
@@ -78,19 +83,23 @@ func Contrast(numbersOfPixels map[int]int, average float64, size int) float64 {
 	return contrast
 }
 
-func AdjustBrightnessAndContrast(newBrightness, newContrast float64,
-	numbersOfPixels map[int]int, images *image.Gray, size int) *image.Gray {
+func AdjustBrightnessAndContrast(content imagecontent.InformationImage,
+	newBrightness, newContrast float64) *image.Gray {
+	width := content.Image().Bounds().Dx()
+	height := content.Image().Bounds().Dy()
+	size := width * height
+	numbersOfPixels := content.NumbersOfPixel()
 	brightness := Brightness(numbersOfPixels, size)
 	contrast := Contrast(numbersOfPixels, brightness, size)
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
-		image.Point{images.Bounds().Dx(), images.Bounds().Dy()}})
+		image.Point{width, height}})
 
 	A := newContrast / contrast
 	B := newBrightness - (A * brightness)
 	newValue := 0.0
-	for i := 0; i < images.Bounds().Dx(); i++ {
-		for j := 0; j < images.Bounds().Dy(); j++ {
-			newValue = A*float64(images.GrayAt(i, j).Y) + B
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			newValue = A*float64(content.Image().GrayAt(i, j).Y) + B
 			if newValue > 255 {
 				newValue = 255
 			} else if newValue < 0 {
@@ -115,8 +124,11 @@ func Entropy(numbersOfPixel map[int]int, size int) float64 {
 	return entropy
 }
 
-func ScaleGray(img image.Image, width, height int) *image.Gray {
-	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+func ScaleGray(img image.Image) *image.Gray {
+	width := img.Bounds().Dx()
+	height := img.Bounds().Dy()
+	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{width, height}})
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
 			r, g, b, _ := img.At(i, j).RGBA()
@@ -129,11 +141,14 @@ func ScaleGray(img image.Image, width, height int) *image.Gray {
 	return img2
 }
 
-func Gamma(grayImage *image.Gray, width, height int, gammaValue float64) *image.Gray {
-	img := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+func Gamma(content imagecontent.InformationImage, gammaValue float64) *image.Gray {
+	width := content.Image().Bounds().Dx()
+	height := content.Image().Bounds().Dy()
+	img := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{width, height}})
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
-			CurrentColor := float64(grayImage.GrayAt(i, j).Y)
+			CurrentColor := float64(content.Image().GrayAt(i, j).Y)
 			a := CurrentColor / 255.0
 			b := math.Pow(a, gammaValue)
 			colorOut := b * 255.0
@@ -144,16 +159,23 @@ func Gamma(grayImage *image.Gray, width, height int, gammaValue float64) *image.
 	return img
 }
 
-func ImageDifference(image1 *image.Gray, image2 image.Image) (*image.Gray, error) {
-	differenceImage := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{image1.Bounds().Dx(), image1.Bounds().Dy()}})
-	if image1.Bounds().Dx() != image2.Bounds().Dx() || image1.Bounds().Dy() != image2.Bounds().Dy() {
+func ImageDifference(content imagecontent.InformationImage,
+	image2 image.Image) (*image.Gray, error) {
+	widthImage1 := content.Image().Bounds().Dx()
+	heightImage1 := content.Image().Bounds().Dy()
+	widthImage2 := image2.Bounds().Dx()
+	heightImage2 := image2.Bounds().Dy()
+	differenceImage := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{widthImage1, heightImage1}})
+	if widthImage1 != widthImage2 || heightImage1 != heightImage2 {
 		return differenceImage, errors.New("the image must contain extension")
 	}
 
-	img2 := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{image2.Bounds().Dx(), image2.Bounds().Dy()}})
+	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{widthImage2, heightImage2}})
 
-	for i := 0; i < image1.Bounds().Dx(); i++ {
-		for j := 0; j < image1.Bounds().Dy(); j++ {
+	for i := 0; i < widthImage1; i++ {
+		for j := 0; j < heightImage1; j++ {
 			var grayColor color.Gray
 			r, g, b, _ := image2.At(i, j).RGBA()
 			if r > 255 || g > 255 || b > 255 {
@@ -169,7 +191,8 @@ func ImageDifference(image1 *image.Gray, image2 image.Image) (*image.Gray, error
 					img2.Set(i, j, image2.At(i, j))
 				}
 			}
-			newValue := int(math.Abs(float64(uint32(image1.GrayAt(i, j).Y) - uint32(img2.GrayAt(i, j).Y))))
+			newValue :=
+				int(math.Abs(float64(uint32(content.Image().GrayAt(i, j).Y) - uint32(img2.GrayAt(i, j).Y))))
 
 			newColor := color.Gray{uint8(newValue)}
 
@@ -179,14 +202,14 @@ func ImageDifference(image1 *image.Gray, image2 image.Image) (*image.Gray, error
 	return differenceImage, nil
 }
 
-func EqualizeAnImage(imageHistogram map[int]int, grayImage *image.Gray) *image.Gray {
-	width := grayImage.Bounds().Dx()
-	height := grayImage.Bounds().Dy()
+func EqualizeAnImage(content imagecontent.InformationImage) *image.Gray {
+	width := content.Image().Bounds().Dx()
+	height := content.Image().Bounds().Dy()
 	img := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
-	equalizeLut := histogram.Equalization(imageHistogram, width*height)
+	equalizeLut := histogram.Equalization(content.NumbersOfPixel(), width*height)
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
-			color := color.Gray{uint8(equalizeLut[int(grayImage.GrayAt(i, j).Y)])}
+			color := color.Gray{uint8(equalizeLut[int(content.Image().GrayAt(i, j).Y)])}
 			img.SetGray(i, j, color)
 		}
 	}
@@ -213,8 +236,10 @@ func ChangeMap(difference *image.Gray, img image.Image, threshold float64) image
 	return newImage
 }
 
-func LinealAdjustmentInSections(grayImage *image.Gray, coordinates []Pair, number,
-	width, height int) *image.Gray {
+func LinealAdjustmentInSections(content imagecontent.InformationImage,
+	coordinates []Pair, number int) *image.Gray {
+	width := content.Image().Bounds().Dx()
+	height := content.Image().Bounds().Dy()
 	var m, n float64
 	lut := make(map[int]int)
 	for i := 0; i < number; i++ {
@@ -225,17 +250,18 @@ func LinealAdjustmentInSections(grayImage *image.Gray, coordinates []Pair, numbe
 			lut[j] = int(math.Round(m*float64(j) + n))
 		}
 	}
-	img := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	img := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{width, height}})
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
-			newColor := color.Gray{uint8(lut[int(grayImage.GrayAt(i, j).Y)])}
+			newColor := color.Gray{uint8(lut[int(content.Image().GrayAt(i, j).Y)])}
 			img.Set(i, j, newColor)
 		}
 	}
 	return img
 }
 
-func ROI(grayImage *image.Gray, i1, j1, i2, j2 int) *image.Gray {
+func ROI(content imagecontent.InformationImage, i1, j1, i2, j2 int) *image.Gray {
 	width := j2 - j1
 	height := i2 - i1
 	newImage := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
@@ -244,7 +270,7 @@ func ROI(grayImage *image.Gray, i1, j1, i2, j2 int) *image.Gray {
 	for i := i1; i <= i2; i++ {
 		z = 0
 		for j := j1; j <= j2; j++ {
-			newImage.Set(k, z, grayImage.GrayAt(i, j))
+			newImage.Set(k, z, content.Image().GrayAt(i, j))
 			z++
 		}
 		k++
