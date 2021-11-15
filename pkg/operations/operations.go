@@ -7,22 +7,10 @@ import (
 	"math"
 	"vpc/pkg/histogram"
 	imagecontent "vpc/pkg/imageContent"
-
-	"gonum.org/v1/plot/plotter"
 )
 
-func ColorsValues(image *image.Gray) ([]uint64, plotter.Values) {
-	var colors []uint64
-	var values plotter.Values
-
-	for i := 0; i < image.Bounds().Dx(); i++ {
-		for j := 0; j < image.Bounds().Dy(); j++ {
-			y := image.GrayAt(i, j).Y
-			colors = append(colors, uint64(y))
-			values = append(values, float64(y))
-		}
-	}
-	return colors, values
+type Pair struct {
+	X, Y int
 }
 
 func Negative(content imagecontent.InformationImage,
@@ -48,49 +36,14 @@ func LutGray() map[int]int {
 	return table
 }
 
-func ValueRange(histogram map[int]int) (int, int) {
-	// 0 Negro
-	// 255 Blanco
-	min := 300 // Negro
-	max := 0   // Blanco
-	for i := 0; i < len(histogram); i++ {
-		if i >= max && histogram[i] != 0 {
-			max = i
-		}
-		if i <= min && histogram[i] != 0 {
-			min = i
-		}
-	}
-	return min, max
-}
-
-func Brightness(numbersOfPixels map[int]int, size int) float64 {
-	sumValues := 0
-	for i := 0; i < len(numbersOfPixels); i++ {
-		sumValues += i * numbersOfPixels[i]
-	}
-	// println(average / numberOfColors)
-	return float64(float64(sumValues) / float64(size))
-}
-
-func Contrast(numbersOfPixels map[int]int, average float64, size int) float64 {
-	calculations := 0.0
-	for i := 0; i < len(numbersOfPixels); i++ {
-		calculations += float64(numbersOfPixels[i]) * math.Pow(float64(float64(i)-average), 2)
-	}
-	contrast := math.Sqrt(calculations / float64(size))
-	// println(contrast)
-	return contrast
-}
-
 func AdjustBrightnessAndContrast(content imagecontent.InformationImage,
 	newBrightness, newContrast float64) *image.Gray {
 	width := content.Image().Bounds().Dx()
 	height := content.Image().Bounds().Dy()
 	size := width * height
 	numbersOfPixels := content.NumbersOfPixel()
-	brightness := Brightness(numbersOfPixels, size)
-	contrast := Contrast(numbersOfPixels, brightness, size)
+	brightness := imagecontent.Brightness(numbersOfPixels, size)
+	contrast := imagecontent.Contrast(numbersOfPixels, brightness, size)
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
 		image.Point{width, height}})
 
@@ -110,18 +63,6 @@ func AdjustBrightnessAndContrast(content imagecontent.InformationImage,
 		}
 	}
 	return img2
-}
-
-func Entropy(numbersOfPixel map[int]int, size int) float64 {
-	entropy := 0.0
-	for i := 0; i < len(numbersOfPixel); i++ {
-		if numbersOfPixel[i] > 0 {
-			p := float64(numbersOfPixel[i]) / float64(size)
-			entropy += p * math.Log2(p)
-		}
-	}
-	entropy *= -1.0
-	return entropy
 }
 
 func ScaleGray(img image.Image) *image.Gray {
@@ -278,6 +219,39 @@ func ROI(content imagecontent.InformationImage, i1, j1, i2, j2 int) *image.Gray 
 	return newImage
 }
 
-type Pair struct {
-	X, Y int
+func HistogramSpecification(refImage *image.Gray,
+	originalImage imagecontent.InformationImage) imagecontent.InformationImage {
+	widthOriginal := originalImage.Image().Bounds().Dx()
+	heightOriginal := originalImage.Image().Bounds().Dy()
+	newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{widthOriginal, heightOriginal}})
+	refColors, _ := imagecontent.ColorsValues(refImage)
+	originalColors, _ := imagecontent.ColorsValues(originalImage.Image())
+	referenceHistogram := histogram.CumulativeHistogram(histogram.NumbersOfPixel(refColors))
+	originalHistogram := histogram.CumulativeHistogram(histogram.NumbersOfPixel(originalColors))
+	referenceProbability, originalProbability := make(map[int]float64), make(map[int]float64)
+	lutMap := make(map[int]int)
+
+	for i := 0; i < 256; i++ {
+		originalProbability[i] =
+			float64(float64(originalHistogram[i]) / float64(len(originalColors)))
+		referenceProbability[i] =
+			float64(float64(referenceHistogram[i]) / float64(len(refColors)))
+	}
+
+	for i := 0; i < len(originalProbability)-1; i++ {
+		j := 255
+		for j >= 0 && originalProbability[i] <= referenceProbability[j] {
+			lutMap[i] = j
+			j = j - 1
+		}
+	}
+
+	for i := 0; i < widthOriginal; i++ {
+		for j := 0; j < heightOriginal; j++ {
+			newImage.Set(i, j,
+				color.Gray{uint8(lutMap[int(originalImage.Image().GrayAt(i, j).Y)])})
+		}
+	}
+	return imagecontent.New(newImage, originalImage.LutGray(), originalImage.Format())
 }

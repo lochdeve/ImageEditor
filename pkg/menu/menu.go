@@ -6,7 +6,6 @@ import (
 	"image/color"
 	"strconv"
 	"strings"
-	calculate "vpc/pkg/calculate"
 	histogram "vpc/pkg/histogram"
 	imagecontent "vpc/pkg/imageContent"
 	"vpc/pkg/information"
@@ -25,7 +24,7 @@ import (
 )
 
 func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
-	lutGray map[int]int, input string) {
+	input string) {
 	width := fullImage.Image().Bounds().Dx()
 	height := fullImage.Image().Bounds().Dy()
 	window := newwindow.NewWindow(application, width, height, input)
@@ -47,21 +46,23 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 	cumulativeHistogramItem := histogramButton(application, window, fullImage,
 		"Cumulative Histogram", true)
 
-	negativeItem := negativeButton(application, fullImage, lutGray)
+	negativeItem := negativeButton(application, fullImage)
 
-	gammaButton := gammaButton(application, fullImage, lutGray, input)
+	gammaButton := gammaButton(application, fullImage, input)
 
-	brightnessAndContrastItem := brightnessAndContrastButton(application, fullImage, lutGray)
+	brightnessAndContrastItem := brightnessAndContrastButton(application, fullImage)
 
-	equalizationItem := equalizationButton(application, fullImage, lutGray, input)
+	equalizationItem := equalizationButton(application, fullImage, input)
 
-	imageDifferenceItem := differenceButton(application, window, fullImage, lutGray)
+	imageDifferenceItem := differenceButton(application, window, fullImage)
 
-	changeMapItem := changeMapButton(application, window, fullImage, lutGray)
+	changeMapItem := changeMapButton(application, window, fullImage)
 
-	sectionItem := sectionsButton(application, fullImage, lutGray)
+	sectionItem := sectionsButton(application, fullImage)
 
-	roiItem := roiButton(application, fullImage, lutGray)
+	histogramSpecificationItem := histogramSpecificationButton(application, window, fullImage)
+
+	roiItem := roiButton(application, fullImage)
 
 	quitItem := quitButton(window)
 
@@ -74,7 +75,8 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 		cumulativeHistogramItem, separatorItem, negativeItem, separatorItem,
 		brightnessAndContrastItem, separatorItem, gammaButton, separatorItem,
 		equalizationItem, separatorItem, imageDifferenceItem, separatorItem,
-		changeMapItem, separatorItem, sectionItem, separatorItem, roiItem)
+		changeMapItem, separatorItem, sectionItem, separatorItem,
+		histogramSpecificationItem, separatorItem, roiItem)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -82,7 +84,7 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 }
 
 func gammaButton(application fyne.App, fullImage imagecontent.InformationImage,
-	lutGray map[int]int, input string) *fyne.MenuItem {
+	input string) *fyne.MenuItem {
 	return fyne.NewMenuItem("Gamma", func() {
 		windowGamma := newwindow.NewWindow(application, 500, 250, "Gamma Value")
 		input := widget.NewEntry()
@@ -95,12 +97,9 @@ func gammaButton(application fyne.App, fullImage imagecontent.InformationImage,
 				dialog.ShowError(errors.New("the value must be between 0.05 and 20.0"),
 					windowGamma)
 			} else {
-				newImage := operations.Gamma(fullImage, number)
-				colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-					calculate.Calculate(newImage)
-				newFullImage := imagecontent.New(newImage, fullImage.Format(), min, max,
-					brightness, contrast, entropy, colors, values, numbersOfPixel)
-				generalMenu(application, newFullImage, lutGray, "Gamma Image")
+				newFullImage := imagecontent.New(operations.Gamma(fullImage, number),
+					fullImage.LutGray(), fullImage.Format())
+				generalMenu(application, newFullImage, "Gamma Image")
 				windowGamma.Close()
 			}
 		}))
@@ -110,7 +109,7 @@ func gammaButton(application fyne.App, fullImage imagecontent.InformationImage,
 }
 
 func brightnessAndContrastButton(application fyne.App,
-	fullImage imagecontent.InformationImage, lutGray map[int]int) *fyne.MenuItem {
+	fullImage imagecontent.InformationImage) *fyne.MenuItem {
 	return fyne.NewMenuItem("Brightness and Contrast", func() {
 		newWindows := newwindow.NewWindow(application, 500, 500,
 			"Brightness and Contrast")
@@ -128,12 +127,10 @@ func brightnessAndContrastButton(application fyne.App,
 		content := widget.NewButton("Calculate", func() {
 			bright, _ := data.Get()
 			conts, _ := data2.Get()
-			newImage := operations.AdjustBrightnessAndContrast(fullImage, bright, conts)
-			colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-				calculate.Calculate(newImage)
-			newFullImage := imagecontent.New(newImage, fullImage.Format(), min, max,
-				brightness, contrast, entropy, colors, values, numbersOfPixel)
-			generalMenu(application, newFullImage, lutGray, "Modified Image")
+			newFullImage :=
+				imagecontent.New(operations.AdjustBrightnessAndContrast(fullImage, bright, conts),
+					fullImage.LutGray(), fullImage.Format())
+			generalMenu(application, newFullImage, "Modified Image")
 		})
 
 		brightnessText, contrastText := canvas.NewText("Brightness", color.White),
@@ -148,20 +145,17 @@ func brightnessAndContrastButton(application fyne.App,
 	})
 }
 
-func negativeButton(application fyne.App, content imagecontent.InformationImage,
-	lutGray map[int]int) *fyne.MenuItem {
+func negativeButton(application fyne.App,
+	content imagecontent.InformationImage) *fyne.MenuItem {
 	return fyne.NewMenuItem("Negative", func() {
-		newImage := operations.Negative(content, lutGray)
-		colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-			calculate.Calculate(newImage)
-		fullImage := imagecontent.New(newImage, content.Format(), min, max,
-			brightness, contrast, entropy, colors, values, numbersOfPixel)
-		generalMenu(application, fullImage, lutGray, "Negative")
+		fullImage := imagecontent.New(operations.Negative(content, content.LutGray()),
+			content.LutGray(), content.Format())
+		generalMenu(application, fullImage, "Negative")
 	})
 }
 
 func differenceButton(application fyne.App, window fyne.Window,
-	content imagecontent.InformationImage, lutGray map[int]int) *fyne.MenuItem {
+	content imagecontent.InformationImage) *fyne.MenuItem {
 	return fyne.NewMenuItem("Image difference", func() {
 		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if reader != nil {
@@ -183,11 +177,8 @@ func differenceButton(application fyne.App, window fyne.Window,
 					if err != nil {
 						dialog.ShowError(err, window)
 					} else {
-						colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-							calculate.Calculate(difference)
-						fullImage := imagecontent.New(content.Image(), content.Format(), min,
-							max, brightness, contrast, entropy, colors, values, numbersOfPixel)
-						generalMenu(application, fullImage, lutGray, "Difference")
+						generalMenu(application, imagecontent.New(difference, content.LutGray(),
+							content.Format()), "Difference")
 					}
 				}
 			}
@@ -199,7 +190,7 @@ func differenceButton(application fyne.App, window fyne.Window,
 }
 
 func changeMapButton(application fyne.App, window fyne.Window,
-	content imagecontent.InformationImage, lutGray map[int]int) *fyne.MenuItem {
+	content imagecontent.InformationImage) *fyne.MenuItem {
 	return fyne.NewMenuItem("Change Map", func() {
 		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if reader != nil {
@@ -218,71 +209,40 @@ func changeMapButton(application fyne.App, window fyne.Window,
 					newWindow.SetContent(canvasImageUsed)
 					newWindow.Show()
 
-					difference, _ := operations.ImageDifference(content, image)
-					differenceWindow := newwindow.NewWindow(application,
-						difference.Bounds().Dx(), difference.Bounds().Dy(), "Difference")
-					canvasImageDifference := canvas.NewImageFromImage(difference)
-					differenceWindow.SetContent(canvasImageDifference)
+					difference, err := operations.ImageDifference(content, image)
+					if err != nil {
+						dialog.ShowError(err, window)
+					} else {
 
-					colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-						calculate.Calculate(difference)
+						differenceWindow := newwindow.NewWindow(application,
+							difference.Bounds().Dx(), difference.Bounds().Dy(), "Difference")
+						canvasImageDifference := canvas.NewImageFromImage(difference)
+						differenceWindow.SetContent(canvasImageDifference)
 
-					fullImage := imagecontent.New(content.Image(), content.Format(), min,
-						max, brightness, contrast, entropy, colors, values, numbersOfPixel)
+						fullImage := imagecontent.New(difference, content.LutGray(),
+							content.Format())
 
-					histogramItem := histogramButton(application, window, fullImage,
-						"Histogram", false)
+						histogramItem := histogramButton(application, window, fullImage,
+							"Histogram", false)
 
-					cumulativeHistogramItem := histogramButton(application, window,
-						fullImage, "Cumulative Histogram", true)
+						cumulativeHistogramItem := histogramButton(application, window,
+							fullImage, "Cumulative Histogram", true)
 
-					thresHoldItem := fyne.NewMenuItem("Threshold", func() {
-						windowThreshold := newwindow.NewWindow(application, 500, 200, "Threshold Value")
-						data := binding.NewFloat()
-						data.Set(0)
-						slide := widget.NewSliderWithData(0, 255, data)
-						formatted := binding.FloatToStringWithFormat(data, "Float value: %0.2f")
-						label := widget.NewLabelWithData(formatted)
+						thresHoldItem := thresHoldButton(application, difference, image)
 
-						content := widget.NewButton("Calculate", func() {
-							threshold, _ := data.Get()
-							newImage := operations.ChangeMap(difference, image, threshold)
-							windowResult := newwindow.NewWindow(application,
-								newImage.Bounds().Dx(), newImage.Bounds().Dy(), "Result")
-							canvasResult := canvas.NewImageFromImage(newImage)
+						quitItem := quitButton(differenceWindow)
 
-							quitItem := quitButton(windowResult)
-							separatorItem := fyne.NewMenuItemSeparator()
-							menuItem := fyne.NewMenu("File", saveButton(application,
-								newImage), separatorItem, quitItem)
-							menu := fyne.NewMainMenu(menuItem)
-							windowResult.SetMainMenu(menu)
+						separatorItem := fyne.NewMenuItemSeparator()
 
-							windowResult.SetContent(canvasResult)
-							windowResult.Show()
-						})
-
-						threshold := canvas.NewText("Threshold", color.White)
-						threshold.TextStyle = fyne.TextStyle{Bold: true}
-						menuAndImageContainer := container.NewVBox(threshold, label, slide,
-							content)
-
-						windowThreshold.SetContent(menuAndImageContainer)
-						windowThreshold.Show()
-					})
-
-					quitItem := quitButton(differenceWindow)
-
-					separatorItem := fyne.NewMenuItemSeparator()
-
-					menuItem := fyne.NewMenu("File", saveButton(application,
-						difference), separatorItem, quitItem)
-					menuItem2 := fyne.NewMenu("User value", thresHoldItem)
-					menuItem3 := fyne.NewMenu("Histograms", histogramItem, separatorItem,
-						cumulativeHistogramItem)
-					menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
-					differenceWindow.SetMainMenu(menu)
-					differenceWindow.Show()
+						menuItem := fyne.NewMenu("File", saveButton(application,
+							difference), separatorItem, quitItem)
+						menuItem2 := fyne.NewMenu("User value", thresHoldItem)
+						menuItem3 := fyne.NewMenu("Histograms", histogramItem, separatorItem,
+							cumulativeHistogramItem)
+						menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
+						differenceWindow.SetMainMenu(menu)
+						differenceWindow.Show()
+					}
 				}
 			}
 		}, window)
@@ -292,8 +252,8 @@ func changeMapButton(application fyne.App, window fyne.Window,
 	})
 }
 
-func sectionsButton(application fyne.App, fullImage imagecontent.InformationImage,
-	lutGray map[int]int) *fyne.MenuItem {
+func sectionsButton(application fyne.App,
+	fullImage imagecontent.InformationImage) *fyne.MenuItem {
 	return fyne.NewMenuItem("Lineal Adjustment in Sections", func() {
 		windowSections := newwindow.NewWindow(application, 500, 200, "Sections Number")
 		input := widget.NewEntry()
@@ -350,13 +310,10 @@ func sectionsButton(application fyne.App, fullImage imagecontent.InformationImag
 					}
 					histogram.Plotesections(plott)
 					window.Content().Refresh()
-					newImage := operations.LinealAdjustmentInSections(fullImage,
-						coordinates, number)
-					colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-						calculate.Calculate(newImage)
-					newFullImage := imagecontent.New(newImage, fullImage.Format(), min,
-						max, brightness, contrast, entropy, colors, values, numbersOfPixel)
-					generalMenu(application, newFullImage, lutGray, "Sections Result")
+					newFullImage := imagecontent.New(operations.LinealAdjustmentInSections(fullImage,
+						coordinates, number), fullImage.LutGray(),
+						fullImage.Format())
+					generalMenu(application, newFullImage, "Sections Result")
 				}
 
 				windowSections.Close()
@@ -391,8 +348,8 @@ func histogramButton(application fyne.App, window fyne.Window,
 	})
 }
 
-func roiButton(application fyne.App, fullImage imagecontent.InformationImage,
-	lutGray map[int]int) *fyne.MenuItem {
+func roiButton(application fyne.App,
+	fullImage imagecontent.InformationImage) *fyne.MenuItem {
 	return fyne.NewMenuItem("Region of interest", func() {
 		width := fullImage.Image().Bounds().Dx()
 		height := fullImage.Image().Bounds().Dy()
@@ -426,13 +383,9 @@ func roiButton(application fyne.App, fullImage imagecontent.InformationImage,
 						strconv.Itoa(height)),
 						roiWindow)
 				} else {
-					newImage := operations.ROI(fullImage, point1IInt, point1JInt,
-						point2IInt, point2JInt)
-					colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-						calculate.Calculate(newImage)
-					newFullImage := imagecontent.New(newImage, fullImage.Format(), min,
-						max, brightness, contrast, entropy, colors, values, numbersOfPixel)
-					generalMenu(application, newFullImage, lutGray, "ROI")
+					newFullImage := imagecontent.New(operations.ROI(fullImage, point1IInt, point1JInt,
+						point2IInt, point2JInt), fullImage.LutGray(), fullImage.Format())
+					generalMenu(application, newFullImage, "ROI")
 				}
 			}))
 		roiWindow.SetContent(content)
@@ -459,21 +412,78 @@ func saveButton(application fyne.App, image image.Image) *fyne.MenuItem {
 }
 
 func equalizationButton(application fyne.App, content imagecontent.InformationImage,
-	lutGray map[int]int, input string) *fyne.MenuItem {
+	input string) *fyne.MenuItem {
 	return fyne.NewMenuItem("Equalization", func() {
-		newImage := operations.EqualizeAnImage(content)
-		colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-			calculate.Calculate(newImage)
-		fullImage := imagecontent.New(newImage, content.Format(), min, max, brightness,
-			contrast, entropy, colors, values, numbersOfPixel)
-		generalMenu(application, fullImage, lutGray, input)
+		fullImage := imagecontent.New(operations.EqualizeAnImage(content),
+			content.LutGray(), content.Format())
+		generalMenu(application, fullImage, input)
+	})
+}
+
+func histogramSpecificationButton(application fyne.App, window fyne.Window,
+	content imagecontent.InformationImage) *fyne.MenuItem {
+	return fyne.NewMenuItem("Histogram Specification", func() {
+		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+			if reader != nil {
+				fileName := reader.URI().String()[7:]
+				refImage, _, err := loadandsave.LoadImage(fileName)
+				if err != nil {
+					dialog.ShowError(err, window)
+				}
+				refImage2 := operations.ScaleGray(refImage)
+				fullImage := imagecontent.New(refImage2, content.LutGray(), content.Format())
+				generalMenu(application, fullImage, "Used Image")
+				generalMenu(application,
+					operations.HistogramSpecification(refImage2, content), "Result Specication")
+			}
+		}, window)
+		newDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png",
+			".jpeg", ".tiff"}))
+		newDialog.Show()
+	})
+}
+
+func thresHoldButton(application fyne.App, grayImage *image.Gray,
+	img image.Image) *fyne.MenuItem {
+	return fyne.NewMenuItem("Threshold", func() {
+		windowThreshold := newwindow.NewWindow(application, 500, 200, "Threshold Value")
+		data := binding.NewFloat()
+		data.Set(0)
+		slide := widget.NewSliderWithData(0, 255, data)
+		formatted := binding.FloatToStringWithFormat(data, "Float value: %0.2f")
+		label := widget.NewLabelWithData(formatted)
+
+		content := widget.NewButton("Calculate", func() {
+			threshold, _ := data.Get()
+			newImage := operations.ChangeMap(grayImage, img, threshold)
+			windowResult := newwindow.NewWindow(application,
+				newImage.Bounds().Dx(), newImage.Bounds().Dy(), "Result")
+			canvasResult := canvas.NewImageFromImage(newImage)
+
+			quitItem := quitButton(windowResult)
+			separatorItem := fyne.NewMenuItemSeparator()
+			menuItem := fyne.NewMenu("File", saveButton(application,
+				newImage), separatorItem, quitItem)
+			menu := fyne.NewMainMenu(menuItem)
+			windowResult.SetMainMenu(menu)
+
+			windowResult.SetContent(canvasResult)
+			windowResult.Show()
+		})
+
+		threshold := canvas.NewText("Threshold", color.White)
+		threshold.TextStyle = fyne.TextStyle{Bold: true}
+		menuAndImageContainer := container.NewVBox(threshold, label, slide,
+			content)
+
+		windowThreshold.SetContent(menuAndImageContainer)
+		windowThreshold.Show()
 	})
 }
 
 func quitButton(window fyne.Window) *fyne.MenuItem {
 	return fyne.NewMenuItem("Quit", func() {
 		window.Close()
-
 	})
 }
 
@@ -490,15 +500,11 @@ func ButtonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					height := colorImage.Bounds().Dy()
 					grayImage := operations.ScaleGray(colorImage)
 
-					colors, values, numbersOfPixel, entropy, min, max, brightness, contrast :=
-						calculate.Calculate(grayImage)
+					lutGray := operations.LutGray()
 
-					fullImage := imagecontent.New(grayImage, format, min, max, brightness,
-						contrast, entropy, colors, values, numbersOfPixel)
+					fullImage := imagecontent.New(grayImage, lutGray, format)
 
 					informationTape := information.Information(fullImage)
-
-					lutGray := operations.LutGray()
 
 					windowName := strings.Split(fileName, "/")
 					imageWindow := newwindow.NewWindow(application,
@@ -515,7 +521,7 @@ func ButtonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					})
 
 					scaleGrayItem := fyne.NewMenuItem("Scale gray", func() {
-						generalMenu(application, fullImage, lutGray, windowName[len(windowName)-1])
+						generalMenu(application, fullImage, windowName[len(windowName)-1])
 					})
 
 					quitItem := quitButton(imageWindow)
