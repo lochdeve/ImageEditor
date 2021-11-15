@@ -37,14 +37,10 @@ func (w *MouseEvents) FocusLost() {
 }
 
 // TypedRune is a hook called by the input handling logic on text input events if this object is focused.
-func (w *MouseEvents) TypedRune(_ rune) {
-
-}
+func (w *MouseEvents) TypedRune(_ rune) {}
 
 // TypedKey is a hook called by the input handling logic on key events if this object is focused.
-func (w *MouseEvents) TypedKey(_ *fyne.KeyEvent) {
-
-}
+func (w *MouseEvents) TypedKey(_ *fyne.KeyEvent) {}
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *MouseEvents) MouseIn(*desktop.MouseEvent) {
@@ -56,8 +52,8 @@ func (w *MouseEvents) MouseMoved(mousePosition *desktop.MouseEvent) {
 	r, g, b, _ := w.image.At(int(mousePosition.AbsolutePosition.X),
 		int(mousePosition.AbsolutePosition.Y)).RGBA()
 	r, g, b = r>>8, g>>8, b>>8
-	textaux := w.size + " R:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) +
-		" B:" + strconv.Itoa(int(b)) + "\t Mouse Position => i: " +
+	textaux := w.size + "\t\t\tR:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) +
+		" B:" + strconv.Itoa(int(b)) + "\t\t Mouse Position => i: " +
 		strconv.Itoa(int(mousePosition.AbsolutePosition.Y)) + " j: " +
 		strconv.Itoa(int(mousePosition.AbsolutePosition.X))
 

@@ -354,7 +354,7 @@ func roiButton(application fyne.App,
 		width := fullImage.Image().Bounds().Dx()
 		height := fullImage.Image().Bounds().Dy()
 
-		roiWindow := newwindow.NewWindow(application, 300, 300, "Values of points")
+		roiWindow := newwindow.NewWindow(application, 500, 200, "Values of points")
 
 		label1, label2 := widget.NewLabel("Start Point: "),
 			widget.NewLabel("Final Point: ")
@@ -367,7 +367,7 @@ func roiButton(application fyne.App,
 
 		initialPoint := container.NewVBox(label1, point1I, point1J)
 		finalPoint := container.NewVBox(label2, point2I, point2J)
-		content := container.NewVBox(container.NewHBox(initialPoint, finalPoint),
+		content := container.NewVBox(container.NewHBox(initialPoint, finalPoint,
 			widget.NewButton("Save", func() {
 				point1IInt, _ := strconv.Atoi(point1I.Text)
 				point1JInt, _ := strconv.Atoi(point1J.Text)
@@ -378,16 +378,17 @@ func roiButton(application fyne.App,
 						roiWindow)
 				} else if point1IInt > width || point1JInt > height ||
 					point2IInt > width || point2JInt > height {
-					dialog.ShowError(errors.New("The i value must be lower than "+
+					dialog.ShowError(errors.New("the i value must be lower than "+
 						strconv.Itoa(width)+" and j value must be lower than "+
 						strconv.Itoa(height)),
 						roiWindow)
 				} else {
-					newFullImage := imagecontent.New(operations.ROI(fullImage, point1IInt, point1JInt,
-						point2IInt, point2JInt), fullImage.LutGray(), fullImage.Format())
+					newFullImage := imagecontent.New(operations.ROI(fullImage, point1IInt,
+						point1JInt, point2IInt, point2JInt), fullImage.LutGray(),
+						fullImage.Format())
 					generalMenu(application, newFullImage, "ROI")
 				}
-			}))
+			})))
 		roiWindow.SetContent(content)
 		roiWindow.Show()
 	})
