@@ -18,7 +18,6 @@ func HistogramMap(colors []uint64) map[int]int {
 		}
 		histogram[i] = cont
 	}
-	// fmt.Println(histogram)
 	return histogram
 }
 
@@ -32,7 +31,7 @@ func CumulativeHistogram(histogram map[int]int) map[int]int {
 	return cumulativeHistogram
 }
 
-func Plote(histogramMap map[int]int, cumulative bool) {
+func Plote(histogramMap map[int]int, size int, cumulative bool) {
 	number := histogramMap
 	if cumulative {
 		number = CumulativeHistogram(histogramMap)
@@ -42,7 +41,7 @@ func Plote(histogramMap map[int]int, cumulative bool) {
 	// fmt.Println(len(values))
 	value := chart.ContinuousSeries{}
 	for i := 0; i < len(number); i++ {
-		Yaxis = append(Yaxis, float64(float64(number[i])/float64(len(histogramMap))))
+		Yaxis = append(Yaxis, float64(float64(number[i])/float64(size)))
 		Xaxis = append(Xaxis, float64(i))
 	}
 

@@ -331,7 +331,7 @@ func histogramButton(application fyne.App, window fyne.Window,
 	content imagecontent.InformationImage, name string,
 	cumulative bool) *fyne.MenuItem {
 	return fyne.NewMenuItem(name, func() {
-		histogram.Plote(content.HistogramMap(), cumulative)
+		histogram.Plote(content.HistogramMap(), len(content.AllImageColors()), cumulative)
 		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
 		if err != nil {
 			dialog.ShowError(err, window)
