@@ -331,7 +331,7 @@ func histogramButton(application fyne.App, window fyne.Window,
 	content imagecontent.InformationImage, name string,
 	cumulative bool) *fyne.MenuItem {
 	return fyne.NewMenuItem(name, func() {
-		histogram.Plote(content.NumbersOfPixel(), content.Values(), cumulative)
+		histogram.Plote(content.HistogramMap(), cumulative)
 		histogramImage, _, err := loadandsave.LoadImage(".tmp/hist.png")
 		if err != nil {
 			dialog.ShowError(err, window)
@@ -373,14 +373,15 @@ func roiButton(application fyne.App,
 				point1JInt, _ := strconv.Atoi(point1J.Text)
 				point2IInt, _ := strconv.Atoi(point2I.Text)
 				point2JInt, _ := strconv.Atoi(point2J.Text)
+
 				if point1IInt < 0 || point1JInt < 0 || point2IInt < 0 || point2JInt < 0 {
 					dialog.ShowError(errors.New("the i and j values must be positive"),
 						roiWindow)
-				} else if point1IInt > width || point1JInt > height ||
-					point2IInt > width || point2JInt > height {
+				} else if point1IInt > height || point1JInt > width ||
+					point2IInt > height || point2JInt > width {
 					dialog.ShowError(errors.New("the i value must be lower than "+
-						strconv.Itoa(width)+" and j value must be lower than "+
-						strconv.Itoa(height)),
+						strconv.Itoa(height)+" and j value must be lower than "+
+						strconv.Itoa(width)),
 						roiWindow)
 				} else {
 					newFullImage := imagecontent.New(operations.ROI(fullImage, point1IInt,
@@ -399,6 +400,7 @@ func saveButton(application fyne.App, image image.Image) *fyne.MenuItem {
 		fileWindow := newwindow.NewWindow(application, 500, 500, "SaveFile")
 		input := widget.NewEntry()
 		input.SetPlaceHolder("example.png")
+
 		content := container.NewVBox(input, widget.NewButton("Save", func() {
 			err := loadandsave.SaveImage(input.Text, image)
 			if err != nil {
@@ -423,6 +425,7 @@ func equalizationButton(application fyne.App, content imagecontent.InformationIm
 
 func histogramSpecificationButton(application fyne.App, window fyne.Window,
 	content imagecontent.InformationImage) *fyne.MenuItem {
+
 	return fyne.NewMenuItem("Histogram Specification", func() {
 		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if reader != nil {
@@ -446,6 +449,7 @@ func histogramSpecificationButton(application fyne.App, window fyne.Window,
 
 func thresHoldButton(application fyne.App, grayImage *image.Gray,
 	img image.Image) *fyne.MenuItem {
+
 	return fyne.NewMenuItem("Threshold", func() {
 		windowThreshold := newwindow.NewWindow(application, 500, 200, "Threshold Value")
 		data := binding.NewFloat()

@@ -5,11 +5,10 @@ import (
 	"os"
 
 	"github.com/wcharczuk/go-chart/v2"
-	"gonum.org/v1/plot/plotter"
 )
 
-func NumbersOfPixel(colors []uint64) map[int]int {
-	numbersOfPixel := make(map[int]int)
+func HistogramMap(colors []uint64) map[int]int {
+	histogram := make(map[int]int)
 	for i := 0; i <= 255; i++ {
 		cont := 0
 		for j := 0; j < len(colors); j++ {
@@ -17,10 +16,10 @@ func NumbersOfPixel(colors []uint64) map[int]int {
 				cont++
 			}
 		}
-		numbersOfPixel[i] = cont
+		histogram[i] = cont
 	}
-	// fmt.Println(numbersofpixel)
-	return numbersOfPixel
+	// fmt.Println(histogram)
+	return histogram
 }
 
 func CumulativeHistogram(histogram map[int]int) map[int]int {
@@ -33,17 +32,17 @@ func CumulativeHistogram(histogram map[int]int) map[int]int {
 	return cumulativeHistogram
 }
 
-func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
-	number := numbersOfPixel
+func Plote(histogramMap map[int]int, cumulative bool) {
+	number := histogramMap
 	if cumulative {
-		number = CumulativeHistogram(numbersOfPixel)
+		number = CumulativeHistogram(histogramMap)
 	}
 	Xaxis := []float64{}
 	Yaxis := []float64{}
 	// fmt.Println(len(values))
 	value := chart.ContinuousSeries{}
 	for i := 0; i < len(number); i++ {
-		Yaxis = append(Yaxis, float64(float64(number[i])/float64(len(values))))
+		Yaxis = append(Yaxis, float64(float64(number[i])/float64(len(histogramMap))))
 		Xaxis = append(Xaxis, float64(i))
 	}
 
@@ -67,12 +66,12 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 	ouputFile.Close()
 }
 
-func Plotesections(numbersOfPixel map[int]int) {
+func Plotesections(histogramMap map[int]int) {
 	Xaxis := []float64{}
 	Yaxis := []float64{}
 	// fmt.Println(len(values))
 	value := chart.ContinuousSeries{}
-	for index, element := range numbersOfPixel {
+	for index, element := range histogramMap {
 		Yaxis = append(Yaxis, float64(float64(element)))
 		Xaxis = append(Xaxis, float64(index))
 	}

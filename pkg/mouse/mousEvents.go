@@ -44,7 +44,7 @@ func (w *MouseEvents) TypedKey(_ *fyne.KeyEvent) {}
 
 // MouseIn is a hook that is called if the mouse pointer enters the element.
 func (w *MouseEvents) MouseIn(*desktop.MouseEvent) {
-	//	fmt.Println("Inside")
+	//	fmt.("Inside")
 }
 
 // MouseMoved is a hook that is called if the mouse pointer moved over the element.
@@ -52,10 +52,11 @@ func (w *MouseEvents) MouseMoved(mousePosition *desktop.MouseEvent) {
 	r, g, b, _ := w.image.At(int(mousePosition.AbsolutePosition.X),
 		int(mousePosition.AbsolutePosition.Y)).RGBA()
 	r, g, b = r>>8, g>>8, b>>8
-	textaux := w.size + "\t\t\tR:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) +
-		" B:" + strconv.Itoa(int(b)) + "\t\t Mouse Position => i: " +
+	textaux := w.size + "  i: " +
 		strconv.Itoa(int(mousePosition.AbsolutePosition.Y)) + " j: " +
-		strconv.Itoa(int(mousePosition.AbsolutePosition.X))
+		strconv.Itoa(int(mousePosition.AbsolutePosition.X)) +
+		"   R:" + strconv.Itoa(int(r)) + " G:" + strconv.Itoa(int(g)) +
+		" B:" + strconv.Itoa(int(b))
 
 	w.text.Text = textaux
 	w.text.Refresh()
