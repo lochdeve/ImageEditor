@@ -46,9 +46,11 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 		Yaxis = append(Yaxis, float64(float64(number[i])/float64(len(values))))
 		Xaxis = append(Xaxis, float64(i))
 	}
+
 	if Yaxis[0] >= 0.01 {
 		Yaxis[0] -= 0.01
 	}
+
 	value = chart.ContinuousSeries{
 		XValues: Xaxis,
 		YValues: Yaxis,
@@ -66,7 +68,6 @@ func Plote(numbersOfPixel map[int]int, values plotter.Values, cumulative bool) {
 }
 
 func Plotesections(numbersOfPixel map[int]int) {
-
 	Xaxis := []float64{}
 	Yaxis := []float64{}
 	// fmt.Println(len(values))
