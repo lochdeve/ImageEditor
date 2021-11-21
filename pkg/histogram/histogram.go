@@ -93,12 +93,11 @@ func Plotesections(histogramMap map[int]int) {
 
 func Equalization(histogram map[int]int, size int) map[int]int {
 	cumulativeHistogram := CumulativeHistogram(histogram)
-	ecualizeHistogram := make(map[int]int, 255)
-
+	ecualizeLut := make(map[int]int)
 	for i := 0; i < len(cumulativeHistogram); i++ {
-		mul := float64(cumulativeHistogram[i]) * float64(256.0)
+		mul := float64(cumulativeHistogram[i]) * 256.0
 		cociente := float64(mul / float64(size))
-		ecualizeHistogram[i] = int(math.Max(float64(0), math.Round(float64(cociente)-1.0)))
+		ecualizeLut[i] = int(math.Max(0.0, math.Round(float64(cociente)-1.0)))
 	}
-	return ecualizeHistogram
+	return ecualizeLut
 }

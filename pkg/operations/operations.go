@@ -1,7 +1,6 @@
 package operations
 
 import (
-	"errors"
 	"image"
 	"image/color"
 	"math"
@@ -89,8 +88,8 @@ func Gamma(content imagecontent.InformationImage, gammaValue float64) *image.Gra
 		image.Point{width, height}})
 	for i := 0; i < width; i++ {
 		for j := 0; j < height; j++ {
-			CurrentColor := float64(content.Image().GrayAt(i, j).Y)
-			a := CurrentColor / 255.0
+			currentColor := float64(content.Image().GrayAt(i, j).Y)
+			a := currentColor / 255.0
 			b := math.Pow(a, gammaValue)
 			colorOut := b * 255.0
 			newColor := color.Gray{uint8(colorOut)}
@@ -108,9 +107,6 @@ func ImageDifference(content imagecontent.InformationImage,
 	heightImage2 := image2.Bounds().Dy()
 	differenceImage := image.NewGray(image.Rectangle{image.Point{0, 0},
 		image.Point{widthImage1, heightImage1}})
-	if widthImage1 != widthImage2 || heightImage1 != heightImage2 {
-		return differenceImage, errors.New("the image must contain extension")
-	}
 
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
 		image.Point{widthImage2, heightImage2}})
@@ -177,7 +173,7 @@ func ChangeMap(difference *image.Gray, img image.Image, threshold float64) image
 	return newImage
 }
 
-func LinealAdjustmentInSections(content imagecontent.InformationImage,
+func LinearAdjustmentInSections(content imagecontent.InformationImage,
 	coordinates []Pair, number int) *image.Gray {
 	width := content.Image().Bounds().Dx()
 	height := content.Image().Bounds().Dy()
@@ -220,24 +216,22 @@ func ROI(content imagecontent.InformationImage, i1, j1, i2, j2 int) *image.Gray 
 	return newImage
 }
 
-func HistogramSpecification(refImage *image.Gray,
+func HistogramSpecification(referenceImage imagecontent.InformationImage,
 	originalImage imagecontent.InformationImage) imagecontent.InformationImage {
 	widthOriginal := originalImage.Image().Bounds().Dx()
 	heightOriginal := originalImage.Image().Bounds().Dy()
 	newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
 		image.Point{widthOriginal, heightOriginal}})
-	allRefImageColors := imagecontent.GetAllImageColors(refImage)
-	allOriginalImageColors := imagecontent.GetAllImageColors(originalImage.Image())
-	referenceHistogram := histogram.CumulativeHistogram(histogram.HistogramMap(allRefImageColors))
-	originalHistogram := histogram.CumulativeHistogram(histogram.HistogramMap(allOriginalImageColors))
+	referenceHistogram := histogram.CumulativeHistogram(referenceImage.HistogramMap())
+	originalHistogram := histogram.CumulativeHistogram(originalImage.HistogramMap())
 	referenceProbability, originalProbability := make(map[int]float64), make(map[int]float64)
 	lutMap := make(map[int]int)
 
 	for i := 0; i < 256; i++ {
 		originalProbability[i] =
-			float64(float64(originalHistogram[i]) / float64(len(allOriginalImageColors)))
+			float64(float64(originalHistogram[i]) / float64(len(originalImage.AllImageColors())))
 		referenceProbability[i] =
-			float64(float64(referenceHistogram[i]) / float64(len(allRefImageColors)))
+			float64(float64(referenceHistogram[i]) / float64(len(referenceImage.AllImageColors())))
 	}
 
 	for i := 0; i < len(originalProbability)-1; i++ {

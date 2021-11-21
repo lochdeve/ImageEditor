@@ -208,12 +208,10 @@ func changeMapButton(application fyne.App, window fyne.Window,
 					canvasImageUsed := canvas.NewImageFromImage(image)
 					newWindow.SetContent(canvasImageUsed)
 					newWindow.Show()
-
 					difference, err := operations.ImageDifference(content, image)
 					if err != nil {
 						dialog.ShowError(err, window)
 					} else {
-
 						differenceWindow := newwindow.NewWindow(application,
 							difference.Bounds().Dx(), difference.Bounds().Dy(), "Difference")
 						canvasImageDifference := canvas.NewImageFromImage(difference)
@@ -254,7 +252,7 @@ func changeMapButton(application fyne.App, window fyne.Window,
 
 func sectionsButton(application fyne.App,
 	fullImage imagecontent.InformationImage) *fyne.MenuItem {
-	return fyne.NewMenuItem("Lineal Adjustment in Sections", func() {
+	return fyne.NewMenuItem("Linear Adjustment in Sections", func() {
 		windowSections := newwindow.NewWindow(application, 500, 200, "Sections Number")
 		input := widget.NewEntry()
 		input.SetPlaceHolder("0")
@@ -299,6 +297,10 @@ func sectionsButton(application fyne.App,
 								dialog.ShowError(errors.New("the values of the X axis of the points can not be repeated"),
 									windowValues)
 								return
+							} else if pointX-pointXplus > 0 {
+								dialog.ShowError(errors.New("the differents points has to be consecutive"),
+									windowValues)
+								return
 							}
 						}
 						if pointX < 0 || pointY < 0 || pointX > 255 || pointY > 255 {
@@ -310,7 +312,7 @@ func sectionsButton(application fyne.App,
 					}
 					histogram.Plotesections(plott)
 					window.Content().Refresh()
-					newFullImage := imagecontent.New(operations.LinealAdjustmentInSections(fullImage,
+					newFullImage := imagecontent.New(operations.LinearAdjustmentInSections(fullImage,
 						coordinates, number), fullImage.LutGray(),
 						fullImage.Format())
 					generalMenu(application, newFullImage, "Sections Result")
@@ -425,7 +427,6 @@ func equalizationButton(application fyne.App, content imagecontent.InformationIm
 
 func histogramSpecificationButton(application fyne.App, window fyne.Window,
 	content imagecontent.InformationImage) *fyne.MenuItem {
-
 	return fyne.NewMenuItem("Histogram Specification", func() {
 		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
 			if reader != nil {
@@ -438,7 +439,7 @@ func histogramSpecificationButton(application fyne.App, window fyne.Window,
 				fullImage := imagecontent.New(refImage2, content.LutGray(), content.Format())
 				generalMenu(application, fullImage, "Used Image")
 				generalMenu(application,
-					operations.HistogramSpecification(refImage2, content), "Result Specication")
+					operations.HistogramSpecification(fullImage, content), "Result Specication")
 			}
 		}, window)
 		newDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png",
