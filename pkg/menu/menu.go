@@ -40,11 +40,15 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 		dialog.ShowInformation("Information", informationText, window)
 	})
 
-	histogramItem := histogramButton(application, window, fullImage,
-		"Histogram", false)
+	histogramItem := fyne.NewMenuItem("Histogram", nil)
+
+	normalHistogramItem := histogramButton(application, window, fullImage,
+		"Normal Histogram", false)
 
 	cumulativeHistogramItem := histogramButton(application, window, fullImage,
 		"Cumulative Histogram", true)
+
+	histogramItem.ChildMenu = fyne.NewMenu("", normalHistogramItem, cumulativeHistogramItem)
 
 	negativeItem := negativeButton(application, fullImage)
 
@@ -54,9 +58,13 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 
 	equalizationItem := equalizationButton(application, fullImage, input)
 
-	imageDifferenceItem := differenceButton(application, window, fullImage)
+	imageDifferenceItem := fyne.NewMenuItem("Image difference", func() {
+		buttonType(application, window, fullImage, true)
+	})
 
-	changeMapItem := changeMapButton(application, window, fullImage)
+	changeMapItem := fyne.NewMenuItem("Change Map", func() {
+		buttonType(application, window, fullImage, false)
+	})
 
 	sectionItem := sectionsButton(application, fullImage)
 
@@ -72,11 +80,11 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 		separatorItem, quitItem)
 	menuItem2 := fyne.NewMenu("Image Information", informationItem)
 	menuItem3 := fyne.NewMenu("Operations", histogramItem, separatorItem,
-		cumulativeHistogramItem, separatorItem, negativeItem, separatorItem,
-		brightnessAndContrastItem, separatorItem, gammaButton, separatorItem,
-		equalizationItem, separatorItem, imageDifferenceItem, separatorItem,
-		changeMapItem, separatorItem, sectionItem, separatorItem,
-		histogramSpecificationItem, separatorItem, roiItem)
+		negativeItem, separatorItem, brightnessAndContrastItem, separatorItem,
+		gammaButton, separatorItem, equalizationItem, separatorItem,
+		imageDifferenceItem, separatorItem, changeMapItem, separatorItem,
+		sectionItem, separatorItem, histogramSpecificationItem,
+		separatorItem, roiItem)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 	window.SetMainMenu(menu)
 	window.Show()
@@ -154,100 +162,69 @@ func negativeButton(application fyne.App,
 	})
 }
 
-func differenceButton(application fyne.App, window fyne.Window,
-	content imagecontent.InformationImage) *fyne.MenuItem {
-	return fyne.NewMenuItem("Image difference", func() {
-		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-			if reader != nil {
-				fileName := reader.URI().String()[7:]
-				image, _, err := loadandsave.LoadImage(fileName)
-				width := image.Bounds().Dx()
-				height := image.Bounds().Dy()
+func buttonType(application fyne.App, window fyne.Window,
+	content imagecontent.InformationImage, typeButton bool) *dialog.FileDialog {
+	newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
+		if reader != nil {
+			fileName := reader.URI().String()[7:]
+			image, _, err := loadandsave.LoadImage(fileName)
+			width := image.Bounds().Dx()
+			height := image.Bounds().Dy()
+			if err != nil {
+				dialog.ShowError(err, window)
+			} else if content.Image().Bounds().Dx() != width ||
+				content.Image().Bounds().Dy() != height {
+				dialog.ShowError(errors.New("the image must have the same dimensions"), window)
+			} else {
+				newWindow := newwindow.NewWindow(application, width, height, "Used Image")
+				canvasImage := canvas.NewImageFromImage(image)
+				newWindow.SetContent(canvasImage)
+				newWindow.Show()
+				difference, err := operations.ImageDifference(content, image)
 				if err != nil {
 					dialog.ShowError(err, window)
-				} else if content.Image().Bounds().Dx() != width ||
-					content.Image().Bounds().Dy() != height {
-					dialog.ShowError(errors.New("the image must have the same dimensions"), window)
+				}
+				fullImage := imagecontent.New(difference, content.LutGray(),
+					content.Format())
+				if typeButton {
+					generalMenu(application, fullImage, "Difference")
 				} else {
-					newWindow := newwindow.NewWindow(application, width, height, "Used Image")
-					canvasImage := canvas.NewImageFromImage(image)
-					newWindow.SetContent(canvasImage)
-					newWindow.Show()
-					difference, err := operations.ImageDifference(content, image)
-					if err != nil {
-						dialog.ShowError(err, window)
-					} else {
-						generalMenu(application, imagecontent.New(difference, content.LutGray(),
-							content.Format()), "Difference")
-					}
+					differenceWindow := newwindow.NewWindow(application,
+						difference.Bounds().Dx(), difference.Bounds().Dy(), "Difference")
+					canvasImageDifference := canvas.NewImageFromImage(difference)
+					differenceWindow.SetContent(canvasImageDifference)
+
+					histogramItem := fyne.NewMenuItem("Histogram", nil)
+
+					normalHistogramItem := histogramButton(application, window, fullImage,
+						"Normal Histogram", false)
+
+					cumulativeHistogramItem := histogramButton(application, window, fullImage,
+						"Cumulative Histogram", true)
+
+					histogramItem.ChildMenu = fyne.NewMenu("", normalHistogramItem, cumulativeHistogramItem)
+
+					thresHoldItem := thresHoldButton(application, difference, image)
+
+					quitItem := quitButton(differenceWindow)
+
+					separatorItem := fyne.NewMenuItemSeparator()
+
+					menuItem := fyne.NewMenu("File", saveButton(application,
+						difference), separatorItem, quitItem)
+					menuItem2 := fyne.NewMenu("User value", thresHoldItem)
+					menuItem3 := fyne.NewMenu("Histograms", histogramItem)
+					menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
+					differenceWindow.SetMainMenu(menu)
+					differenceWindow.Show()
 				}
 			}
-		}, window)
-		newDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png",
-			".jpeg", ".tiff"}))
-		newDialog.Show()
-	})
-}
-
-func changeMapButton(application fyne.App, window fyne.Window,
-	content imagecontent.InformationImage) *fyne.MenuItem {
-	return fyne.NewMenuItem("Change Map", func() {
-		newDialog := dialog.NewFileOpen(func(reader fyne.URIReadCloser, err error) {
-			if reader != nil {
-				fileName := reader.URI().String()[7:]
-				image, _, err := loadandsave.LoadImage(fileName)
-				width := image.Bounds().Dx()
-				height := image.Bounds().Dy()
-				if err != nil {
-					dialog.ShowError(err, window)
-				} else if content.Image().Bounds().Dx() != width ||
-					content.Image().Bounds().Dy() != height {
-					dialog.ShowError(errors.New("the image must have the same dimensions"), window)
-				} else {
-					newWindow := newwindow.NewWindow(application, width, height, "Used Image")
-					canvasImageUsed := canvas.NewImageFromImage(image)
-					newWindow.SetContent(canvasImageUsed)
-					newWindow.Show()
-					difference, err := operations.ImageDifference(content, image)
-					if err != nil {
-						dialog.ShowError(err, window)
-					} else {
-						differenceWindow := newwindow.NewWindow(application,
-							difference.Bounds().Dx(), difference.Bounds().Dy(), "Difference")
-						canvasImageDifference := canvas.NewImageFromImage(difference)
-						differenceWindow.SetContent(canvasImageDifference)
-
-						fullImage := imagecontent.New(difference, content.LutGray(),
-							content.Format())
-
-						histogramItem := histogramButton(application, window, fullImage,
-							"Histogram", false)
-
-						cumulativeHistogramItem := histogramButton(application, window,
-							fullImage, "Cumulative Histogram", true)
-
-						thresHoldItem := thresHoldButton(application, difference, image)
-
-						quitItem := quitButton(differenceWindow)
-
-						separatorItem := fyne.NewMenuItemSeparator()
-
-						menuItem := fyne.NewMenu("File", saveButton(application,
-							difference), separatorItem, quitItem)
-						menuItem2 := fyne.NewMenu("User value", thresHoldItem)
-						menuItem3 := fyne.NewMenu("Histograms", histogramItem, separatorItem,
-							cumulativeHistogramItem)
-						menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
-						differenceWindow.SetMainMenu(menu)
-						differenceWindow.Show()
-					}
-				}
-			}
-		}, window)
-		newDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png",
-			".jpeg", ".tiff"}))
-		newDialog.Show()
-	})
+		}
+	}, window)
+	newDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png",
+		".jpeg", ".tiff"}))
+	newDialog.Show()
+	return newDialog
 }
 
 func sectionsButton(application fyne.App,
