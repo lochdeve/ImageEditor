@@ -31,5 +31,6 @@ func main() {
 	mainWindow.SetMainMenu(menu)
 	mainWindow.SetContent(container.NewVBox(container.NewCenter(text),
 		container.NewCenter(canvasImage)))
+	mainWindow.SetOnClosed(application.Quit)
 	mainWindow.ShowAndRun()
 }
