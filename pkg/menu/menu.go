@@ -194,15 +194,11 @@ func buttonType(application fyne.App, window fyne.Window,
 					canvasImageDifference := canvas.NewImageFromImage(difference)
 					differenceWindow.SetContent(canvasImageDifference)
 
-					histogramItem := fyne.NewMenuItem("Histogram", nil)
-
-					normalHistogramItem := histogramButton(application, window, fullImage,
+					histogramItem := histogramButton(application, window, fullImage,
 						"Normal Histogram", false)
 
 					cumulativeHistogramItem := histogramButton(application, window, fullImage,
 						"Cumulative Histogram", true)
-
-					histogramItem.ChildMenu = fyne.NewMenu("", normalHistogramItem, cumulativeHistogramItem)
 
 					thresHoldItem := thresHoldButton(application, difference, image)
 
@@ -213,7 +209,7 @@ func buttonType(application fyne.App, window fyne.Window,
 					menuItem := fyne.NewMenu("File", saveButton(application,
 						difference), separatorItem, quitItem)
 					menuItem2 := fyne.NewMenu("User value", thresHoldItem)
-					menuItem3 := fyne.NewMenu("Histograms", histogramItem)
+					menuItem3 := fyne.NewMenu("Histograms", histogramItem, separatorItem, cumulativeHistogramItem)
 					menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
 					differenceWindow.SetMainMenu(menu)
 					differenceWindow.Show()
