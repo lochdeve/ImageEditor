@@ -13,7 +13,7 @@ import (
 
 func main() {
 	application := app.New()
-	mainWindow := application.NewWindow("Hello")
+	mainWindow := application.NewWindow("PhotoEditor Prototype")
 	window := screenshot.GetDisplayBounds(0)
 	mainWindow.Resize(fyne.NewSize(float32(window.Bounds().Dx()),
 		float32(window.Bounds().Dy())))
@@ -24,13 +24,9 @@ func main() {
 
 	openFileItem := menu.ButtonOpen(application, mainWindow)
 
-	quitItem := fyne.NewMenuItem("Quit", func() {
-		mainWindow.Close()
-	})
-
 	newItemSeparator := fyne.NewMenuItemSeparator()
 
-	fileItem := fyne.NewMenu("File", openFileItem, newItemSeparator, quitItem)
+	fileItem := fyne.NewMenu("File", openFileItem, newItemSeparator)
 	menu := fyne.NewMainMenu(fileItem)
 	mainWindow.SetMainMenu(menu)
 	mainWindow.SetContent(container.NewVBox(container.NewCenter(text),
