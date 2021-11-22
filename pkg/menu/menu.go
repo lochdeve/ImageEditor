@@ -180,10 +180,7 @@ func buttonType(application fyne.App, window fyne.Window,
 				canvasImage := canvas.NewImageFromImage(image)
 				newWindow.SetContent(canvasImage)
 				newWindow.Show()
-				difference, err := operations.ImageDifference(content, image)
-				if err != nil {
-					dialog.ShowError(err, window)
-				}
+				difference := operations.ImageDifference(content, image)
 				fullImage := imagecontent.New(difference, content.LutGray(),
 					content.Format())
 				if typeButton {

@@ -39,10 +39,8 @@ func AdjustBrightnessAndContrast(content imagecontent.InformationImage,
 	newBrightness, newContrast float64) *image.Gray {
 	width := content.Image().Bounds().Dx()
 	height := content.Image().Bounds().Dy()
-	size := width * height
-	numbersOfPixels := content.HistogramMap()
-	brightness := imagecontent.Brightness(numbersOfPixels, size)
-	contrast := imagecontent.Contrast(numbersOfPixels, brightness, size)
+	brightness := content.Brigthness()
+	contrast := content.Contrast()
 	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
 		image.Point{width, height}})
 
@@ -100,43 +98,23 @@ func Gamma(content imagecontent.InformationImage, gammaValue float64) *image.Gra
 }
 
 func ImageDifference(content imagecontent.InformationImage,
-	image2 image.Image) (*image.Gray, error) {
+	image2 image.Image) *image.Gray {
 	widthImage1 := content.Image().Bounds().Dx()
 	heightImage1 := content.Image().Bounds().Dy()
-	widthImage2 := image2.Bounds().Dx()
-	heightImage2 := image2.Bounds().Dy()
 	differenceImage := image.NewGray(image.Rectangle{image.Point{0, 0},
 		image.Point{widthImage1, heightImage1}})
 
-	img2 := image.NewGray(image.Rectangle{image.Point{0, 0},
-		image.Point{widthImage2, heightImage2}})
+	img2 := ScaleGray(image2)
 
 	for i := 0; i < widthImage1; i++ {
 		for j := 0; j < heightImage1; j++ {
-			var grayColor color.Gray
-			r, g, b, _ := image2.At(i, j).RGBA()
-			if r > 255 || g > 255 || b > 255 {
-				r, g, b = r>>8, g>>8, b>>8
-				y := 0.299*float64(r) + 0.587*float64(g) + 0.114*float64(b)
-				grayColor = color.Gray{uint8(y)}
-				img2.Set(i, j, grayColor)
-			} else {
-				if r == 0 && g == 0 && b == 0 {
-					grayColor = color.Gray{uint8(0)}
-					img2.Set(i, j, grayColor)
-				} else {
-					img2.Set(i, j, image2.At(i, j))
-				}
-			}
 			newValue :=
 				int(math.Abs(float64(uint32(content.Image().GrayAt(i, j).Y) - uint32(img2.GrayAt(i, j).Y))))
-
 			newColor := color.Gray{uint8(newValue)}
-
 			differenceImage.Set(i, j, newColor)
 		}
 	}
-	return differenceImage, nil
+	return differenceImage
 }
 
 func EqualizeAnImage(content imagecontent.InformationImage) *image.Gray {
@@ -204,7 +182,6 @@ func ROI(content imagecontent.InformationImage, i1, j1, i2, j2 int) *image.Gray 
 	newImage := image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
 	k := 0
 	z := 0
-
 	for i := j1; i <= j2; i++ {
 		z = 0
 		for j := i1; j <= i2; j++ {

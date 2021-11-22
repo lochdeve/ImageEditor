@@ -95,9 +95,9 @@ func Equalization(histogram map[int]int, size int) map[int]int {
 	cumulativeHistogram := CumulativeHistogram(histogram)
 	ecualizeLut := make(map[int]int)
 	for i := 0; i < len(cumulativeHistogram); i++ {
-		mul := float64(cumulativeHistogram[i]) * 256.0
-		cociente := float64(mul / float64(size))
-		ecualizeLut[i] = int(math.Max(0.0, math.Round(float64(cociente)-1.0)))
+		mult := float64(cumulativeHistogram[i]) * 256.0
+		quotient := float64(mult / float64(size))
+		ecualizeLut[i] = int(math.Max(0.0, math.Round(float64(quotient)-1.0)))
 	}
 	return ecualizeLut
 }
