@@ -483,8 +483,7 @@ func ButtonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 					informationTape := information.Information(fullImage)
 
 					windowName := strings.Split(fileName, "/")
-					imageWindow := newwindow.NewWindow(application,
-						colorImage.Bounds().Dx(), colorImage.Bounds().Dy(),
+					imageWindow := newwindow.NewWindow(application, width, height,
 						windowName[len(windowName)-1])
 					canvasImage := canvas.NewImageFromImage(colorImage)
 					text := strconv.Itoa(height) + " x " + strconv.Itoa(width)

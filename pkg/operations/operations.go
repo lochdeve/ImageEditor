@@ -109,7 +109,7 @@ func ImageDifference(content imagecontent.InformationImage,
 	for i := 0; i < widthImage1; i++ {
 		for j := 0; j < heightImage1; j++ {
 			newValue :=
-				int(math.Abs(float64(uint32(content.Image().GrayAt(i, j).Y) - uint32(img2.GrayAt(i, j).Y))))
+				math.Abs(float64(content.Image().GrayAt(i, j).Y) - float64(img2.GrayAt(i, j).Y))
 			newColor := color.Gray{uint8(newValue)}
 			differenceImage.Set(i, j, newColor)
 		}
