@@ -227,3 +227,27 @@ func HistogramSpecification(referenceImage imagecontent.InformationImage,
 	}
 	return imagecontent.New(newImage, originalImage.LutGray(), originalImage.Format())
 }
+
+func RotateImg(img imagecontent.InformationImage, option int) imagecontent.InformationImage {
+	if option != 0 {
+		witdh := img.Image().Bounds().Dx()
+		height := img.Image().Bounds().Dy()
+		option--
+		newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
+			image.Point{height, witdh}})
+
+		l := newImage.Bounds().Dy()
+
+		for i := witdh; i >= 0; i-- {
+			k := 0
+			for j := height; j >= 0; j-- {
+				newImage.SetGray(k, l, img.Image().GrayAt(i, j))
+				k++
+			}
+			l--
+		}
+		return RotateImg(imagecontent.New(newImage, img.LutGray(), img.Format()), option)
+	} else {
+		return img
+	}
+}

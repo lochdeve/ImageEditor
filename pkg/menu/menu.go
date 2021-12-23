@@ -66,6 +66,24 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 		buttonType(application, window, fullImage, false)
 	})
 
+	verticalMirrorItem := fyne.NewMenuItem("Vertical Mirror", func() {
+		scaleButton(application, fullImage, 0)
+	})
+
+	horizontalMirrorItem := fyne.NewMenuItem("Horizontal Mirror", func() {
+		scaleButton(application, fullImage, 1)
+	})
+
+	transposedMirrorItem := fyne.NewMenuItem("Transposed Mirror", func() {
+		scaleButton(application, fullImage, 2)
+	})
+
+	rotate90Item := rotateButton(application, fullImage, 1, "Rotate 90º")
+
+	rotate180Item := rotateButton(application, fullImage, 2, "Rotate 180º")
+
+	rotate270Item := rotateButton(application, fullImage, 3, "Rotate 270º")
+
 	sectionItem := sectionsButton(application, fullImage)
 
 	histogramSpecificationItem := histogramSpecificationButton(application, window, fullImage)
@@ -85,7 +103,11 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 		imageDifferenceItem, separatorItem, changeMapItem, separatorItem,
 		sectionItem, separatorItem, histogramSpecificationItem,
 		separatorItem, roiItem)
-	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3)
+	menuItem4 := fyne.NewMenu("Mirror", verticalMirrorItem, separatorItem,
+		horizontalMirrorItem, separatorItem, transposedMirrorItem)
+	menuItem5 := fyne.NewMenu("Rotate", rotate90Item, separatorItem,
+		rotate180Item, separatorItem, rotate270Item)
+	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3, menuItem4, menuItem5)
 	window.SetMainMenu(menu)
 	window.Show()
 	window.Close()
@@ -517,6 +539,37 @@ func ButtonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 		newDialog.SetFilter(storage.NewExtensionFileFilter([]string{".jpg", ".png",
 			".jpeg", ".tiff"}))
 		newDialog.Show()
+	})
+}
+
+func scaleButton(application fyne.App, content imagecontent.InformationImage, option int) {
+	grayImage := content.Image()
+	width := grayImage.Bounds().Dx()
+	height := grayImage.Bounds().Dy()
+	var img *image.Gray
+	if option == 0 || option == 1 {
+		img = image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{width, height}})
+	} else {
+		img = image.NewGray(image.Rectangle{image.Point{0, 0}, image.Point{height, width}})
+	}
+	for i := 0; i < width; i++ {
+		for j := 0; j < height; j++ {
+			if option == 0 {
+				img.SetGray(i, height-j, grayImage.GrayAt(i, j))
+			} else if option == 1 {
+				img.SetGray(width-i, j, grayImage.GrayAt(i, j))
+			} else {
+				img.SetGray(j, i, grayImage.GrayAt(i, j))
+			}
+		}
+	}
+	generalMenu(application, imagecontent.New(img, content.LutGray(), content.Format()), "Result")
+}
+
+func rotateButton(application fyne.App, fullImage imagecontent.InformationImage, option int, name string) *fyne.MenuItem {
+	return fyne.NewMenuItem(name, func() {
+		generalMenu(application, imagecontent.New(operations.RotateImg(fullImage, option).Image(),
+			fullImage.LutGray(), fullImage.Format()), "Rotation")
 	})
 }
 
