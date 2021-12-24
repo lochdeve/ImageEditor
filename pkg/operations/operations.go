@@ -251,3 +251,55 @@ func RotateImg(img imagecontent.InformationImage, option int) imagecontent.Infor
 		return img
 	}
 }
+
+func Scale(fullimage imagecontent.InformationImage, option string,
+	percentageWidth, percentageHeight float64) imagecontent.InformationImage {
+	widthOriginal := fullimage.Image().Bounds().Dx()
+	heightOriginal := fullimage.Image().Bounds().Dy()
+	newWidth := int(percentageWidth * float64(widthOriginal))
+	newHeight := int(percentageHeight * float64(heightOriginal))
+	newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{newWidth, newHeight}})
+
+	for i := 0; i < newWidth; i++ {
+		for j := 0; j < newHeight; j++ {
+			x := float64(i) / percentageWidth
+			y := float64(j) / percentageHeight
+			xTrunc := int(x)
+			yTrunc := int(y)
+			A := Pair{X: xTrunc, Y: yTrunc + 1}
+			B := Pair{X: xTrunc + 1, Y: yTrunc + 1}
+			C := Pair{X: xTrunc, Y: yTrunc}
+			D := Pair{X: xTrunc + 1, Y: yTrunc}
+			points := [4]Pair{A, B, C, D}
+			if option == "VMP" {
+				var distances []float64
+				for k := 0; k < len(points); k++ {
+					d := math.Sqrt(math.Pow(float64(points[k].X)-x, 2) +
+						math.Pow(float64(points[k].Y)-y, 2))
+					distances = append(distances, d)
+				}
+				smallestNumber := distances[0]
+				position := 0
+				for i, element := range distances {
+					if element < smallestNumber {
+						smallestNumber = element
+						position = i
+					}
+				}
+				newImage.Set(i, j, fullimage.Image().GrayAt(points[position].X, points[position].Y))
+			} else {
+				grayA := fullimage.Image().GrayAt(A.X, A.Y).Y
+				grayB := fullimage.Image().GrayAt(B.X, B.Y).Y
+				grayC := fullimage.Image().GrayAt(C.X, C.Y).Y
+				grayD := fullimage.Image().GrayAt(D.X, D.Y).Y
+				p := uint8(x - float64(i))
+				q := uint8(y - float64(j))
+				newValue := grayC + (grayD-grayC)*p + (grayA-grayC)*q + (grayB+grayC-grayA-grayD)*p*q
+				newColor := color.Gray{newValue}
+				newImage.Set(i, j, newColor)
+			}
+		}
+	}
+	return imagecontent.New(newImage, fullimage.LutGray(), fullimage.Format())
+}

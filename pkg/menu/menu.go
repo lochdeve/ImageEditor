@@ -67,15 +67,15 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 	})
 
 	verticalMirrorItem := fyne.NewMenuItem("Vertical Mirror", func() {
-		scaleButton(application, fullImage, 0)
+		mirrorButton(application, fullImage, 0)
 	})
 
 	horizontalMirrorItem := fyne.NewMenuItem("Horizontal Mirror", func() {
-		scaleButton(application, fullImage, 1)
+		mirrorButton(application, fullImage, 1)
 	})
 
 	transposedMirrorItem := fyne.NewMenuItem("Transposed Mirror", func() {
-		scaleButton(application, fullImage, 2)
+		mirrorButton(application, fullImage, 2)
 	})
 
 	rotate90Item := rotateButton(application, fullImage, 1, "Rotate 90º")
@@ -89,6 +89,8 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 	histogramSpecificationItem := histogramSpecificationButton(application, window, fullImage)
 
 	roiItem := roiButton(application, fullImage)
+
+	scaleItem := scaleButton(application, fullImage)
 
 	quitItem := quitButton(window)
 
@@ -107,7 +109,8 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 		horizontalMirrorItem, separatorItem, transposedMirrorItem)
 	menuItem5 := fyne.NewMenu("Rotate", rotate90Item, separatorItem,
 		rotate180Item, separatorItem, rotate270Item)
-	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3, menuItem4, menuItem5)
+	menuItem6 := fyne.NewMenu("Scale", scaleItem)
+	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6)
 	window.SetMainMenu(menu)
 	window.Show()
 	window.Close()
@@ -542,7 +545,8 @@ func ButtonOpen(application fyne.App, window fyne.Window) *fyne.MenuItem {
 	})
 }
 
-func scaleButton(application fyne.App, content imagecontent.InformationImage, option int) {
+func mirrorButton(application fyne.App, content imagecontent.InformationImage,
+	option int) {
 	grayImage := content.Image()
 	width := grayImage.Bounds().Dx()
 	height := grayImage.Bounds().Dy()
@@ -566,10 +570,47 @@ func scaleButton(application fyne.App, content imagecontent.InformationImage, op
 	generalMenu(application, imagecontent.New(img, content.LutGray(), content.Format()), "Result")
 }
 
-func rotateButton(application fyne.App, fullImage imagecontent.InformationImage, option int, name string) *fyne.MenuItem {
+func rotateButton(application fyne.App, fullImage imagecontent.InformationImage,
+	option int, name string) *fyne.MenuItem {
 	return fyne.NewMenuItem(name, func() {
 		generalMenu(application, imagecontent.New(operations.RotateImg(fullImage, option).Image(),
 			fullImage.LutGray(), fullImage.Format()), "Rotation")
+	})
+}
+
+func scaleButton(application fyne.App,
+	fullImage imagecontent.InformationImage) *fyne.MenuItem {
+	return fyne.NewMenuItem("Scale", func() {
+		windowSize := newwindow.NewWindow(application, 250, 250, "Size Image")
+		label1, label2 := widget.NewLabel("Width: "), widget.NewLabel("Heigth: ")
+		width, height := container.NewVBox(label1), container.NewVBox(label2)
+		percentageWidth, percentageHeight := widget.NewEntry(), widget.NewEntry()
+		percentageWidth.SetPlaceHolder("0")
+		percentageHeight.SetPlaceHolder("0")
+		width.Add(percentageWidth)
+		height.Add(percentageHeight)
+		scaleOptions := widget.NewRadioGroup([]string{"Bilineal", "VMP"}, func(string) {})
+		content := container.NewVBox(container.NewHBox(width, height))
+		windowSize.SetContent(container.NewBorder(content,
+			widget.NewButton("Enter", func() {
+				numberWidth, err := strconv.ParseFloat(percentageWidth.Text, 64)
+				if err != nil {
+					dialog.ShowError(err, windowSize)
+				}
+				numberHeight, err := strconv.ParseFloat(percentageHeight.Text, 64)
+				if err != nil {
+					dialog.ShowError(err, windowSize)
+				}
+				if numberWidth > 30000.0 || numberHeight > 30000.0 || numberWidth < 1.0 || numberHeight < 1.0 {
+					dialog.ShowError(errors.New("the value must be between 1.0 and 30000.0"),
+						windowSize)
+				} else {
+					generalMenu(application, operations.Scale(fullImage, scaleOptions.Selected,
+						numberWidth/100.0, numberHeight/100.0), "Result")
+					windowSize.Close()
+				}
+			}), nil, nil, scaleOptions))
+		windowSize.Show()
 	})
 }
 
