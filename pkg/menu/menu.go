@@ -25,8 +25,8 @@ import (
 
 func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 	input string) {
-	width := fullImage.Image().Bounds().Dx()
-	height := fullImage.Image().Bounds().Dy()
+	width := fullImage.Width()
+	height := fullImage.Height()
 	window := newwindow.NewWindow(application, width, height, input)
 	image := canvas.NewImageFromImage(fullImage.Image())
 	text := strconv.Itoa(height) + " x " + strconv.Itoa(width)
@@ -84,6 +84,10 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 
 	rotate270Item := rotateButton(application, fullImage, 3, "Rotate 270º")
 
+	rotateSpecificItem := rotateSpecificAngleButton(application, fullImage)
+
+	rotateSpecificMethodItem := rotateSpecificAngleAndMethodButton(application, fullImage)
+
 	sectionItem := sectionsButton(application, fullImage)
 
 	histogramSpecificationItem := histogramSpecificationButton(application, window, fullImage)
@@ -108,7 +112,8 @@ func generalMenu(application fyne.App, fullImage imagecontent.InformationImage,
 	menuItem4 := fyne.NewMenu("Mirror", verticalMirrorItem, separatorItem,
 		horizontalMirrorItem, separatorItem, transposedMirrorItem)
 	menuItem5 := fyne.NewMenu("Rotate", rotate90Item, separatorItem,
-		rotate180Item, separatorItem, rotate270Item)
+		rotate180Item, separatorItem, rotate270Item, separatorItem, rotateSpecificItem,
+		separatorItem, rotateSpecificMethodItem)
 	menuItem6 := fyne.NewMenu("Scale", scaleItem)
 	menu := fyne.NewMainMenu(menuItem, menuItem2, menuItem3, menuItem4, menuItem5, menuItem6)
 	window.SetMainMenu(menu)
@@ -611,6 +616,57 @@ func scaleButton(application fyne.App,
 				}
 			}), nil, nil, scaleOptions))
 		windowSize.Show()
+	})
+}
+
+func rotateSpecificAngleButton(application fyne.App,
+	fullImage imagecontent.InformationImage) *fyne.MenuItem {
+	return fyne.NewMenuItem("Rotate Specific Angle", func() {
+		windowAngle := newwindow.NewWindow(application, 250, 250, "Angle rotation")
+		input := widget.NewEntry()
+		input.SetPlaceHolder("0")
+		content := container.NewVBox(input, widget.NewButton("Enter", func() {
+			number, err := strconv.ParseFloat(input.Text, 64)
+			if err != nil {
+				dialog.ShowError(err, windowAngle)
+			} else if number < -360.0 || number > 360.0 {
+				dialog.ShowError(errors.New("the value must be between 0.0 and 360.0"),
+					windowAngle)
+			} else {
+				generalMenu(application, operations.Rotate(fullImage, number, ""), "Result")
+				windowAngle.Close()
+			}
+		}))
+		windowAngle.SetContent(content)
+		windowAngle.Show()
+	})
+}
+
+func rotateSpecificAngleAndMethodButton(application fyne.App,
+	fullImage imagecontent.InformationImage) *fyne.MenuItem {
+	return fyne.NewMenuItem("Rotate Specific Method and Angle", func() {
+		windowAngle := newwindow.NewWindow(application, 250, 250, "Angle rotation")
+		label := widget.NewLabel("Angle: ")
+		angle := container.NewVBox(label)
+		input := widget.NewEntry()
+		input.SetPlaceHolder("0")
+		angle.Add(input)
+		scaleOptions := widget.NewRadioGroup([]string{"Bilineal", "VMP"}, func(string) {})
+		content := container.NewVBox(angle)
+		windowAngle.SetContent(container.NewBorder(content,
+			widget.NewButton("Enter", func() {
+				number, err := strconv.ParseFloat(input.Text, 64)
+				if err != nil {
+					dialog.ShowError(err, windowAngle)
+				} else if number < -360.0 || number > 360.0 {
+					dialog.ShowError(errors.New("the value must be between 0.0 and 360.0"),
+						windowAngle)
+				} else {
+					generalMenu(application, operations.Rotate(fullImage, number, scaleOptions.Selected), "Result")
+					windowAngle.Close()
+				}
+			}), nil, nil, scaleOptions))
+		windowAngle.Show()
 	})
 }
 

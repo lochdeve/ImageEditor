@@ -293,8 +293,8 @@ func Scale(fullimage imagecontent.InformationImage, option string,
 				grayB := fullimage.Image().GrayAt(B.X, B.Y).Y
 				grayC := fullimage.Image().GrayAt(C.X, C.Y).Y
 				grayD := fullimage.Image().GrayAt(D.X, D.Y).Y
-				p := uint8(x - float64(i))
-				q := uint8(y - float64(j))
+				p := uint8(xTrunc - C.X)
+				q := uint8(yTrunc - C.Y)
 				newValue := grayC + (grayD-grayC)*p + (grayA-grayC)*q + (grayB+grayC-grayA-grayD)*p*q
 				newColor := color.Gray{newValue}
 				newImage.Set(i, j, newColor)
@@ -302,4 +302,89 @@ func Scale(fullimage imagecontent.InformationImage, option string,
 		}
 	}
 	return imagecontent.New(newImage, fullimage.LutGray(), fullimage.Format())
+}
+
+func Rotate(fullimage imagecontent.InformationImage,
+	angle float64, option string) imagecontent.InformationImage {
+	widthOriginal := fullimage.Width()
+	heightOriginal := fullimage.Height()
+	E := Pair{X: cal(0, 0, angle, 0), Y: cal(0, 0, angle, 1)}
+	F := Pair{X: cal(0, widthOriginal, angle, 0), Y: cal(0, widthOriginal, angle, 1)}
+	H := Pair{X: cal(widthOriginal, 0, angle, 0), Y: cal(widthOriginal, 0, angle, 1)}
+	G := Pair{X: cal(widthOriginal, heightOriginal, angle, 0), Y: cal(widthOriginal,
+		heightOriginal, angle, 1)}
+	points := [4]Pair{E, F, H, G}
+	maxX, minX := points[0].X, points[0].X
+	maxY, minY := points[0].Y, points[0].Y
+	for k := 0; k < len(points); k++ {
+		if points[k].X > maxX {
+			maxX = points[k].X
+		}
+		if points[k].Y > maxY {
+			maxY = points[k].Y
+		}
+		if points[k].X < minX {
+			minX = points[k].X
+		}
+		if points[k].Y < minY {
+			minY = points[k].Y
+		}
+	}
+	newWidth := int(math.Abs(float64(maxX) - float64(minX)))
+	newHeight := int(math.Abs(float64(maxY) - float64(minY)))
+	newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{newWidth, newHeight}})
+
+	for i := 0; i < newWidth; i++ {
+		for j := 0; j < newHeight; j++ {
+			xPrima := i + minX
+			yPrima := j + minY
+			x := float64(xPrima)*math.Cos(angle) + float64(yPrima)*math.Sin(angle)
+			y := float64(-1)*float64(xPrima)*math.Sin(angle) + float64(yPrima)*math.Cos(angle)
+			xTrunc := int(x)
+			yTrunc := int(y)
+			A := Pair{X: xTrunc, Y: yTrunc + 1}
+			B := Pair{X: xTrunc + 1, Y: yTrunc + 1}
+			C := Pair{X: xTrunc, Y: yTrunc}
+			D := Pair{X: xTrunc + 1, Y: yTrunc}
+			points := [4]Pair{A, B, C, D}
+			if option == "VMP" {
+				var distances []float64
+				for k := 0; k < len(points); k++ {
+					d := math.Sqrt(math.Pow(float64(points[k].X)-x, 2) +
+						math.Pow(float64(points[k].Y)-y, 2))
+					distances = append(distances, d)
+				}
+				smallestNumber := distances[0]
+				position := 0
+				for i, element := range distances {
+					if element < smallestNumber {
+						smallestNumber = element
+						position = i
+					}
+				}
+				newImage.Set(i, j, fullimage.Image().GrayAt(points[position].X, points[position].Y))
+			} else if option == "Bilineal" {
+				grayA := fullimage.Image().GrayAt(A.X, A.Y).Y
+				grayB := fullimage.Image().GrayAt(B.X, B.Y).Y
+				grayC := fullimage.Image().GrayAt(C.X, C.Y).Y
+				grayD := fullimage.Image().GrayAt(D.X, D.Y).Y
+				p := uint8(xTrunc - C.X)
+				q := uint8(yTrunc - C.Y)
+				newValue := grayC + (grayD-grayC)*p + (grayA-grayC)*q + (grayB+grayC-grayA-grayD)*p*q
+				newColor := color.Gray{newValue}
+				newImage.Set(i, j, newColor)
+			} else {
+				newImage.Set(i, j, fullimage.Image().GrayAt(xTrunc, yTrunc))
+			}
+		}
+	}
+	return imagecontent.New(newImage, fullimage.LutGray(), fullimage.Format())
+}
+
+func cal(x, y int, angle float64, option int) int {
+	if option == 0 {
+		return int(float64(x)*math.Cos(angle) - float64(y)*math.Sin(angle))
+	}
+	return int(float64(x)*math.Sin(angle) + float64(y)*math.Cos(angle))
 }

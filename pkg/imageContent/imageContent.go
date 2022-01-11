@@ -9,7 +9,7 @@ import (
 type InformationImage struct {
 	image                         *image.Gray
 	format                        string
-	min, max                      int
+	min, max, width, height       int
 	brightness, contrast, entropy float64
 	allImageColors                []uint64
 	histogramMap, lutGray         map[int]int
@@ -21,7 +21,8 @@ func New(newImage *image.Gray, newLutGray map[int]int, newFormat string) Informa
 	return InformationImage{image: newImage, format: newFormat, min: newMin,
 		max: newMax, brightness: newBrightness, contrast: newContrast,
 		entropy: newEntropy, allImageColors: newColors,
-		histogramMap: newHistogramMap, lutGray: newLutGray}
+		histogramMap: newHistogramMap, lutGray: newLutGray, width: newImage.Bounds().Dx(),
+		height: newImage.Bounds().Dy()}
 }
 
 func (content InformationImage) Image() *image.Gray {
@@ -62,6 +63,14 @@ func (content InformationImage) HistogramMap() map[int]int {
 
 func (content InformationImage) LutGray() map[int]int {
 	return content.lutGray
+}
+
+func (content InformationImage) Width() int {
+	return content.width
+}
+
+func (content InformationImage) Height() int {
+	return content.height
 }
 
 func Brightness(histogram map[int]int, size int) float64 {
