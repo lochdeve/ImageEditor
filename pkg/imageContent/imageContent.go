@@ -17,7 +17,7 @@ type InformationImage struct {
 
 func New(newImage *image.Gray, newLutGray map[int]int, newFormat string) InformationImage {
 	newColors, newHistogramMap, newEntropy,
-		newMin, newMax, newBrightness, newContrast := calculate(newImage)
+		newMin, newMax, newBrightness, newContrast := calculate(newImage, 0)
 	return InformationImage{image: newImage, format: newFormat, min: newMin,
 		max: newMax, brightness: newBrightness, contrast: newContrast,
 		entropy: newEntropy, allImageColors: newColors,
@@ -73,6 +73,11 @@ func (content InformationImage) Height() int {
 	return content.height
 }
 
+func (content *InformationImage) SetCont(value int) {
+	content.allImageColors, content.histogramMap, content.entropy, content.min, content.max,
+		content.brightness, content.contrast = calculate(content.image, value)
+}
+
 func Brightness(histogram map[int]int, size int) float64 {
 	sumValues := 0
 	for i := 0; i < len(histogram); i++ {
@@ -90,12 +95,23 @@ func Contrast(histogram map[int]int, average float64, size int) float64 {
 	return contrast
 }
 
-func GetAllImageColors(image *image.Gray) []uint64 {
+func GetAllImageColors(image *image.Gray, value, option int) []uint64 {
 	var colors []uint64
+	cont := value
 	for i := 0; i < image.Bounds().Dx(); i++ {
 		for j := 0; j < image.Bounds().Dy(); j++ {
 			y := image.GrayAt(i, j).Y
-			colors = append(colors, uint64(y))
+			if option == 0 {
+				colors = append(colors, uint64(y))
+			} else if option == 1 {
+				if y != 0 {
+					colors = append(colors, uint64(y))
+				} else if y == 0 && cont == 0 {
+					colors = append(colors, uint64(y))
+				} else {
+					cont--
+				}
+			}
 		}
 	}
 	return colors
@@ -129,9 +145,16 @@ func entropy(HistogramMap map[int]int, size int) float64 {
 	return entropy
 }
 
-func calculate(image *image.Gray) ([]uint64, map[int]int, float64, int, int, float64, float64) {
+func calculate(image *image.Gray, value int) ([]uint64, map[int]int, float64,
+	int, int, float64, float64) {
 	size := image.Bounds().Dx() * image.Bounds().Dy()
-	colors := GetAllImageColors(image)
+	var colors []uint64
+	if value == 0 {
+		colors = GetAllImageColors(image, value, 0)
+	} else {
+		colors = GetAllImageColors(image, value, 1)
+		size -= value
+	}
 	HistogramMap := histogram.HistogramMap(colors)
 	entropy := entropy(HistogramMap, size)
 	min, max := valueRange(HistogramMap)

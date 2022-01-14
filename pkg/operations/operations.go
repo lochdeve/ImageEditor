@@ -289,14 +289,14 @@ func Scale(fullimage imagecontent.InformationImage, option string,
 				}
 				newImage.Set(i, j, fullimage.Image().GrayAt(points[position].X, points[position].Y))
 			} else {
-				grayA := fullimage.Image().GrayAt(A.X, A.Y).Y
-				grayB := fullimage.Image().GrayAt(B.X, B.Y).Y
-				grayC := fullimage.Image().GrayAt(C.X, C.Y).Y
-				grayD := fullimage.Image().GrayAt(D.X, D.Y).Y
-				p := uint8(xTrunc - C.X)
-				q := uint8(yTrunc - C.Y)
+				grayA := float64(fullimage.Image().GrayAt(A.X, A.Y).Y)
+				grayB := float64(fullimage.Image().GrayAt(B.X, B.Y).Y)
+				grayC := float64(fullimage.Image().GrayAt(C.X, C.Y).Y)
+				grayD := float64(fullimage.Image().GrayAt(D.X, D.Y).Y)
+				p := x - float64(C.X)
+				q := y - float64(C.Y)
 				newValue := grayC + (grayD-grayC)*p + (grayA-grayC)*q + (grayB+grayC-grayA-grayD)*p*q
-				newColor := color.Gray{newValue}
+				newColor := color.Gray{uint8(newValue)}
 				newImage.Set(i, j, newColor)
 			}
 		}
@@ -308,11 +308,12 @@ func Rotate(fullimage imagecontent.InformationImage,
 	angle float64, option string) imagecontent.InformationImage {
 	widthOriginal := fullimage.Width()
 	heightOriginal := fullimage.Height()
-	E := Pair{X: cal(0, 0, angle, 0), Y: cal(0, 0, angle, 1)}
-	F := Pair{X: cal(0, widthOriginal, angle, 0), Y: cal(0, widthOriginal, angle, 1)}
-	H := Pair{X: cal(widthOriginal, 0, angle, 0), Y: cal(widthOriginal, 0, angle, 1)}
-	G := Pair{X: cal(widthOriginal, heightOriginal, angle, 0), Y: cal(widthOriginal,
-		heightOriginal, angle, 1)}
+	angleRad := (angle * math.Pi) / float64(180)
+	E := Pair{X: cal(0, 0, angleRad, 0), Y: cal(0, 0, angleRad, 1)}
+	F := Pair{X: cal(0, widthOriginal, angleRad, 0), Y: cal(0, widthOriginal, angleRad, 1)}
+	H := Pair{X: cal(widthOriginal, 0, angleRad, 0), Y: cal(widthOriginal, 0, angleRad, 1)}
+	G := Pair{X: cal(widthOriginal, heightOriginal, angleRad, 0), Y: cal(widthOriginal,
+		heightOriginal, angleRad, 1)}
 	points := [4]Pair{E, F, H, G}
 	maxX, minX := points[0].X, points[0].X
 	maxY, minY := points[0].Y, points[0].Y
@@ -335,14 +336,19 @@ func Rotate(fullimage imagecontent.InformationImage,
 	newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
 		image.Point{newWidth, newHeight}})
 
+	cont := 0
 	for i := 0; i < newWidth; i++ {
 		for j := 0; j < newHeight; j++ {
 			xPrima := i + minX
 			yPrima := j + minY
-			x := float64(xPrima)*math.Cos(angle) + float64(yPrima)*math.Sin(angle)
-			y := float64(-1)*float64(xPrima)*math.Sin(angle) + float64(yPrima)*math.Cos(angle)
+			angleRad := (angle * math.Pi) / float64(180)
+			x := float64(xPrima)*math.Cos(angleRad) + float64(yPrima)*math.Sin(angleRad)
+			y := float64(-1)*float64(xPrima)*math.Sin(angleRad) + float64(yPrima)*math.Cos(angleRad)
 			xTrunc := int(x)
 			yTrunc := int(y)
+			if xTrunc > widthOriginal || yTrunc > heightOriginal || xTrunc < 0 || yTrunc < 0 {
+				cont++
+			}
 			A := Pair{X: xTrunc, Y: yTrunc + 1}
 			B := Pair{X: xTrunc + 1, Y: yTrunc + 1}
 			C := Pair{X: xTrunc, Y: yTrunc}
@@ -365,21 +371,23 @@ func Rotate(fullimage imagecontent.InformationImage,
 				}
 				newImage.Set(i, j, fullimage.Image().GrayAt(points[position].X, points[position].Y))
 			} else if option == "Bilineal" {
-				grayA := fullimage.Image().GrayAt(A.X, A.Y).Y
-				grayB := fullimage.Image().GrayAt(B.X, B.Y).Y
-				grayC := fullimage.Image().GrayAt(C.X, C.Y).Y
-				grayD := fullimage.Image().GrayAt(D.X, D.Y).Y
-				p := uint8(xTrunc - C.X)
-				q := uint8(yTrunc - C.Y)
+				grayA := float64(fullimage.Image().GrayAt(A.X, A.Y).Y)
+				grayB := float64(fullimage.Image().GrayAt(B.X, B.Y).Y)
+				grayC := float64(fullimage.Image().GrayAt(C.X, C.Y).Y)
+				grayD := float64(fullimage.Image().GrayAt(D.X, D.Y).Y)
+				p := x - float64(C.X)
+				q := y - float64(C.Y)
 				newValue := grayC + (grayD-grayC)*p + (grayA-grayC)*q + (grayB+grayC-grayA-grayD)*p*q
-				newColor := color.Gray{newValue}
+				newColor := color.Gray{uint8(newValue)}
 				newImage.Set(i, j, newColor)
 			} else {
 				newImage.Set(i, j, fullimage.Image().GrayAt(xTrunc, yTrunc))
 			}
 		}
 	}
-	return imagecontent.New(newImage, fullimage.LutGray(), fullimage.Format())
+	original := imagecontent.New(newImage, fullimage.LutGray(), fullimage.Format())
+	original.SetCont(cont)
+	return original
 }
 
 func cal(x, y int, angle float64, option int) int {
