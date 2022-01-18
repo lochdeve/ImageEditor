@@ -309,36 +309,12 @@ func Rotate(fullimage imagecontent.InformationImage,
 	widthOriginal := fullimage.Width()
 	heightOriginal := fullimage.Height()
 	angleRad := (angle * math.Pi) / float64(180)
-	E := Pair{X: cal(0, 0, angleRad, 0), Y: cal(0, 0, angleRad, 1)}
-	F := Pair{X: cal(0, widthOriginal, angleRad, 0), Y: cal(0, widthOriginal, angleRad, 1)}
-	H := Pair{X: cal(widthOriginal, 0, angleRad, 0), Y: cal(widthOriginal, 0, angleRad, 1)}
-	G := Pair{X: cal(widthOriginal, heightOriginal, angleRad, 0), Y: cal(widthOriginal,
-		heightOriginal, angleRad, 1)}
-	points := [4]Pair{E, F, H, G}
-	maxX, minX := points[0].X, points[0].X
-	maxY, minY := points[0].Y, points[0].Y
-	for k := 0; k < len(points); k++ {
-		if points[k].X > maxX {
-			maxX = points[k].X
-		}
-		if points[k].Y > maxY {
-			maxY = points[k].Y
-		}
-		if points[k].X < minX {
-			minX = points[k].X
-		}
-		if points[k].Y < minY {
-			minY = points[k].Y
-		}
-	}
-	newWidth := int(math.Abs(float64(maxX) - float64(minX)))
-	newHeight := int(math.Abs(float64(maxY) - float64(minY)))
-	newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
-		image.Point{newWidth, newHeight}})
+
+	minX, minY, newImage := rotateCorner(widthOriginal, heightOriginal, angleRad)
 
 	cont := 0
-	for i := 0; i < newWidth; i++ {
-		for j := 0; j < newHeight; j++ {
+	for i := 0; i < newImage.Bounds().Dx(); i++ {
+		for j := 0; j < newImage.Bounds().Dy(); j++ {
 			xPrima := i + minX
 			yPrima := j + minY
 			angleRad := (angle * math.Pi) / float64(180)
@@ -380,8 +356,6 @@ func Rotate(fullimage imagecontent.InformationImage,
 				newValue := grayC + (grayD-grayC)*p + (grayA-grayC)*q + (grayB+grayC-grayA-grayD)*p*q
 				newColor := color.Gray{uint8(newValue)}
 				newImage.Set(i, j, newColor)
-			} else {
-				newImage.Set(i, j, fullimage.Image().GrayAt(xTrunc, yTrunc))
 			}
 		}
 	}
@@ -390,9 +364,58 @@ func Rotate(fullimage imagecontent.InformationImage,
 	return original
 }
 
-func cal(x, y int, angle float64, option int) int {
+func RotateAndPaint(fullimage imagecontent.InformationImage,
+	angle float64) imagecontent.InformationImage {
+	widthOriginal := fullimage.Width()
+	heightOriginal := fullimage.Height()
+	angleRad := (angle * math.Pi) / float64(180)
+
+	minX, minY, newImage := rotateCorner(widthOriginal, heightOriginal, angleRad)
+
+	for i := 0; i < widthOriginal; i++ {
+		for j := 0; j < heightOriginal; j++ {
+			xPrima := calc(i, j, angleRad, 0)
+			yPrima := calc(i, j, angleRad, 1)
+			indiceX := xPrima - minX
+			indiceY := yPrima - minY
+			newImage.Set(indiceX, indiceY, fullimage.Image().GrayAt(i, j))
+		}
+	}
+	return imagecontent.New(newImage, fullimage.LutGray(), fullimage.Format())
+}
+
+func calc(x, y int, angle float64, option int) int {
 	if option == 0 {
 		return int(float64(x)*math.Cos(angle) - float64(y)*math.Sin(angle))
 	}
 	return int(float64(x)*math.Sin(angle) + float64(y)*math.Cos(angle))
+}
+
+func rotateCorner(width, heigth int, angle float64) (int, int, *image.Gray) {
+	E := Pair{X: calc(0, 0, angle, 0), Y: calc(0, 0, angle, 1)}
+	F := Pair{X: calc(0, width, angle, 0), Y: calc(0, width, angle, 1)}
+	H := Pair{X: calc(width, 0, angle, 0), Y: calc(width, 0, angle, 1)}
+	G := Pair{X: calc(width, heigth, angle, 0), Y: calc(width, heigth, angle, 1)}
+	points := [4]Pair{E, F, H, G}
+	maxX, minX := points[0].X, points[0].X
+	maxY, minY := points[0].Y, points[0].Y
+	for k := 0; k < len(points); k++ {
+		if points[k].X > maxX {
+			maxX = points[k].X
+		}
+		if points[k].Y > maxY {
+			maxY = points[k].Y
+		}
+		if points[k].X < minX {
+			minX = points[k].X
+		}
+		if points[k].Y < minY {
+			minY = points[k].Y
+		}
+	}
+	newWidth := int(math.Abs(float64(maxX) - float64(minX)))
+	newHeight := int(math.Abs(float64(maxY) - float64(minY)))
+	newImage := image.NewGray(image.Rectangle{image.Point{0, 0},
+		image.Point{newWidth, newHeight}})
+	return minX, minY, newImage
 }

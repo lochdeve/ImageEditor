@@ -633,7 +633,7 @@ func rotateSpecificAngleButton(application fyne.App,
 				dialog.ShowError(errors.New("the value must be between 0.0 and 360.0"),
 					windowAngle)
 			} else {
-				generalMenu(application, operations.Rotate(fullImage, number, ""), "Result")
+				generalMenu(application, operations.RotateAndPaint(fullImage, number), "Result")
 				windowAngle.Close()
 			}
 		}))
