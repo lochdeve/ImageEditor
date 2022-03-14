@@ -18,7 +18,7 @@ func main() {
 	mainWindow.Resize(fyne.NewSize(float32(window.Bounds().Dx()),
 		float32(window.Bounds().Dy())))
 
-	canvasImage := canvas.NewImageFromFile(".tmp/ULL.jpg")
+	canvasImage := canvas.NewImageFromFile("img/ULL.jpg")
 	canvasImage.FillMode = canvas.ImageFillOriginal
 	text := widget.NewLabel("This prototype is for Computer vision a subject\nof 4º grade of Computer Engineering. \n\nWas develop by:\n\t- Carlos García Lezcano\n\t- Eduardo Expósito Barrera")
 
