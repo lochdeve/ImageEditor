@@ -2,6 +2,7 @@
 [![forthebadge made-with-go](http://ForTheBadge.com/images/badges/made-with-go.svg)](https://go.dev/)
 [![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/)
 [![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/)
+[![GitHub Pages](https://img.shields.io/badge/Web-GitHub%20Pages-informational)](https://lochdeve.github.io/ImageEditor/)
 - Universidad de La Laguna
 - **Subject:** Computer vision
 - **Final Project of Subject:** Image editor prototype
@@ -48,6 +49,7 @@
           ├── Discord.png
           ├── Git.png
           ├── Go.png
+          ├── ULL.png
       ├── pkg
           ├── histogram
               ├── histogram.go
