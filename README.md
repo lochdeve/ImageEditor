@@ -20,12 +20,18 @@
   - This repository contains a final project of the subject Computer Vision. The project consisted of a prototype of an image editor with different operations seen in the subject.
 
 ## Resources used
-- Para la realización del proyecto los recursos que hemos utilizado han sido los siguientes:
+- The following resources have been used to carry out the project:
     - **[Go](https://go.dev/):** Programming language used for development.
     <br>
     <p align="center">
       <img src="img/Go.png" width="300px">
     </p> 
+    
+    - **[Github](https://github.com/):** Software used to maintain version control of the developed code.
+    <br>
+    <p align="center">
+      <img src="img/Git.png" width="300px">
+    </p>
     
     - **[Discord](https://discord.com/):** Application used for equipment communication.
     <br>
@@ -39,11 +45,9 @@
 
       .
       ├── img
-          ├── lena.tiff
-          ├── lena2.tiff
-          ├── lena3.tiff
-          ├── tanque-anterior.tiff
-          ├── tanque-posterior.tiff
+          ├── Discord.png
+          ├── Git.png
+          ├── Go.png
       ├── pkg
           ├── histogram
               ├── histogram.go
@@ -61,6 +65,12 @@
               ├── newWindow.go
           ├── operations
               ├── operations.go
+      ├── testImages
+          ├── lena.tiff
+          ├── lena2.tiff
+          ├── lena3.tiff
+          ├── tanque-anterior.tiff
+          ├── tanque-posterior.tiff
       ├── go.mod
       ├── go.sum
       ├── main.go
