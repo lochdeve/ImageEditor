@@ -10,7 +10,7 @@
 ## Index
 - [Authors](#authors)
 - [Description](#description)
-- [Resources used](#recursos-used)
+- [Resources used](#resources-used)
 - [Directory structure](#directory-structure)
 
 ## Authors
@@ -18,7 +18,7 @@
   - Eduardo Expósito Barrera - alu0101230382@ull.edu.es
 
 ## Description
-  - This repository contains a final project of the subject Computer Vision. The project consisted of a prototype of an image editor with different operations seen in the subject.
+  - This repository contains a final project of the subject Computer Vision. The project consisted in a prototype of an image editor with different operations seen in the subject.
 
 ## Resources used
 - The following resources have been used to carry out the project:
