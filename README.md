@@ -1,25 +1,41 @@
-# VPC
+# Image Editor
 [![forthebadge made-with-go](http://ForTheBadge.com/images/badges/made-with-go.svg)](https://go.dev/)
-[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/lochdeve/VPC)
+[![GitHub](https://img.shields.io/badge/GitHub-100000?style=for-the-badge&logo=github&logoColor=white)](https://github.com/)
+[![Discord](https://img.shields.io/badge/Discord-7289DA?style=for-the-badge&logo=discord&logoColor=white)](https://discord.com/)
 - Universidad de La Laguna
-- **Asignatura:** Visión por computador
-- **Proyecto Final de Asignatura:** Prototipo de editor de imágenes
+- **Subject:** Computer vision
+- **Final Project of Subject:** Image editor prototype
 
-## Índice
-- [Autores](#autores)
-- [Descripción](#descripción)
-- [Recursos utilizados](#recursos-utilizados)
-- [Estructura de directorios](#estructura-de-directorios)
+## Index
+- [Authors](#authors)
+- [Description](#description)
+- [Resources used](#recursos-used)
+- [Directory structure](#directory-structure)
 
-## Autores
-  - Carlos García González - alu0101208268@ull.edu.es
+## Authors
+  - Carlos García Lezcano - alu0101208268@ull.edu.es
   - Eduardo Expósito Barrera - alu0101230382@ull.edu.es
 
-## Descripción
-  - Este repositorio contiene un proyecto final de asignatura de la asignatura Visión por computador. El proyecto ha consistido en realizar un prototipo de editor de imáganes con distintas operaciones vistas en la materia.
+## Description
+  - This repository contains a final project of the subject Computer Vision. The project consisted of a prototype of an image editor with different operations seen in the subject.
 
-## Estructura de directorios
-- El directorio está organizado de la siguiente manera:
+## Resources used
+- Para la realización del proyecto los recursos que hemos utilizado han sido los siguientes:
+    - **[Go](https://go.dev/):** Programming language used for development.
+    <br>
+    <p align="center">
+      <img src="img/Go.png" width="300px">
+    </p> 
+    
+    - **[Discord](https://discord.com/):** Application used for equipment communication.
+    <br>
+    <p align="center">
+      <img src="img/Discord.png" width="200px">
+    </p> 
+
+
+## Directory structure
+- The directory is organized as follows:
 
       .
       ├── img
